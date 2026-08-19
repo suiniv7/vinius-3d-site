@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vinius 3D — Peças impressas sob medida</title>
+<style>
+  :root{
+    --bg:#ffffff;
+    --bg-alt:#f6f7f6;
+    --card:#ffffff;
+    --card-hover:#f6f7f6;
+    --border:#e4e6e4;
+    --text:#161616;
+    --text-dim:#6b6f6c;
+    --accent:#4CAF6D;
+    --accent-dark:#398f56;
+    --accent-soft:rgba(76,175,109,0.12);
+    --radius:14px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);line-height:1.5;}
+  a{color:inherit;}
+  img,svg{display:block;}
+  h1,h2,h3{margin:0 0 8px;font-weight:800;letter-spacing:-0.01em;}
+  p{margin:0 0 12px;color:var(--text-dim);}
+  section{padding:64px 20px;max-width:1080px;margin:0 auto;}
+  .badge-note{display:inline-block;background:var(--accent-soft);color:var(--accent-dark);font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;margin-bottom:14px;letter-spacing:.02em;}
+
+  /* ---- top nav ---- */
+  header.nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,0.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);}
+  .nav-inner{max-width:1080px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 20px;}
+  .logo{display:flex;align-items:baseline;gap:1px;font-weight:800;font-size:21px;letter-spacing:-0.02em;}
+  .logo .lv{color:#161616;}
+  .logo .l3d{color:var(--accent);}
+  nav.links{display:flex;gap:22px;font-size:14px;color:var(--text-dim);}
+  nav.links a{text-decoration:none;transition:color .15s;}
+  nav.links a:hover{color:var(--text);}
+  .cart-btn{position:relative;background:var(--text);border:1px solid var(--text);color:#fff;padding:9px 14px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;}
+  .cart-btn:hover{background:#000;}
+  .cart-count{background:var(--accent);color:#0a2b16;font-size:11px;font-weight:800;min-width:18px;height:18px;border-radius:999px;display:flex;align-items:center;justify-content:center;padding:0 4px;}
+
+  /* ---- offerings banner ---- */
+  .offer-banner{background:var(--bg-alt);border-bottom:1px solid var(--border);}
+  .offer-inner{max-width:1080px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:10px;overflow-x:auto;}
+  .offer-label{font-size:12px;font-weight:700;color:var(--text-dim);white-space:nowrap;padding-right:6px;border-right:1px solid var(--border);margin-right:2px;}
+  .offer-pill{white-space:nowrap;background:#fff;border:1px solid var(--border);color:var(--text);font-size:13px;font-weight:600;padding:7px 14px;border-radius:999px;text-decoration:none;display:flex;align-items:center;gap:6px;transition:border-color .15s, color .15s;}
+  .offer-pill:hover{border-color:var(--accent);color:var(--accent-dark);}
+  .offer-pill.filament{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-dark);}
+
+  /* ---- hero ---- */
+  .hero{padding:80px 20px 64px;text-align:center;background:radial-gradient(circle at 50% 0%, rgba(76,175,109,0.08), transparent 60%);}
+  .hero h1{font-size:clamp(30px,5vw,48px);max-width:720px;margin:0 auto 16px;color:#111;}
+  .hero p.lead{max-width:520px;margin:0 auto 32px;font-size:17px;}
+  .hero-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
+  .btn{border:none;border-radius:11px;padding:14px 26px;font-size:15px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:transform .12s, opacity .12s;}
+  .btn:hover{transform:translateY(-1px);}
+  .btn-primary{background:var(--accent);color:#0a2b16;}
+  .btn-secondary{background:#fff;color:var(--text);border:1.5px solid var(--text);}
+
+  /* ---- section headers ---- */
+  .section-head{margin-bottom:32px;}
+  .section-head h2{font-size:28px;color:#111;}
+  .section-head p{max-width:560px;}
+
+  /* ---- category tabs ---- */
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:28px;}
+  .tab{background:#fff;border:1px solid var(--border);color:var(--text-dim);padding:8px 16px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;}
+  .tab.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-dark);}
+
+  /* ---- product grid ---- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;transition:border-color .15s, box-shadow .15s;}
+  .card:hover{border-color:var(--accent);box-shadow:0 4px 16px rgba(0,0,0,0.05);}
+  .card-img{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:42px;background:var(--bg-alt);}
+  .card-body{padding:14px;display:flex;flex-direction:column;gap:6px;flex:1;}
+  .card-body h3{font-size:15px;color:#111;}
+  .card-body .desc{font-size:13px;color:var(--text-dim);margin:0;flex:1;}
+  .card-foot{display:flex;align-items:center;justify-content:space-between;margin-top:8px;}
+  .price{font-weight:800;color:var(--accent-dark);font-size:15px;}
+  .qty-row{display:flex;align-items:center;gap:8px;margin-top:6px;}
+  .qty-row button{width:26px;height:26px;border-radius:7px;border:1px solid var(--border);background:var(--bg-alt);color:var(--text);cursor:pointer;font-size:14px;}
+  .qty-row .qn{min-width:18px;text-align:center;font-size:13px;}
+  .add-btn{width:100%;margin-top:10px;background:var(--accent-soft);color:var(--accent-dark);border:1px solid var(--accent);border-radius:9px;padding:8px;font-size:13px;font-weight:700;cursor:pointer;}
+  .add-btn:hover{background:var(--accent);color:#0a2b16;}
+
+  /* ---- faça sua peça ---- */
+  .custom-panel{background:var(--bg-alt);border:1px solid var(--border);border-radius:var(--radius);padding:28px;display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media(max-width:640px){.custom-panel{grid-template-columns:1fr;}}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:13px;font-weight:700;color:var(--text-dim);}
+  .field input,.field select,.field textarea{background:#fff;border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-size:14px;font-family:inherit;}
+  .field.full{grid-column:1/-1;}
+  .file-drop{border:1.5px dashed var(--border);border-radius:9px;padding:22px;text-align:center;color:var(--text-dim);font-size:13px;cursor:pointer;background:#fff;}
+  .file-drop:hover{border-color:var(--accent);color:var(--accent-dark);}
+
+  /* ---- filamentos ---- */
+  .fil-table{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+  .fil-row{display:flex;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border);align-items:center;}
+  .fil-row:last-child{border-bottom:none;}
+  .fil-name{font-weight:700;display:flex;align-items:center;gap:10px;color:#111;}
+  .fil-dot{width:12px;height:12px;border-radius:50%;}
+  .fil-price{color:var(--accent-dark);font-weight:800;}
+  .fil-note{font-size:13px;color:var(--text-dim);margin-top:12px;}
+
+  /* ---- sobre ---- */
+  .about-box{background:var(--bg-alt);border:1px solid var(--border);border-radius:var(--radius);padding:28px;max-width:640px;}
+
+  /* ---- contato ---- */
+  .contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;}
+  .contact-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;text-align:center;text-decoration:none;}
+  .contact-card:hover{border-color:var(--accent);}
+  .contact-card .ic{font-size:26px;margin-bottom:8px;}
+  .contact-card .lbl{font-weight:700;font-size:14px;color:#111;}
+  .contact-card .sub{font-size:12px;color:var(--text-dim);}
+
+  footer{text-align:center;padding:32px 20px;color:var(--text-dim);font-size:12px;border-top:1px solid var(--border);}
+
+  /* ---- cart drawer ---- */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);opacity:0;pointer-events:none;transition:opacity .2s;z-index:90;}
+  .overlay.open{opacity:1;pointer-events:auto;}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:min(400px,92vw);background:#fff;border-left:1px solid var(--border);z-index:100;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;}
+  .drawer.open{transform:translateX(0);}
+  .drawer-head{padding:20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+  .drawer-head h3{margin:0;font-size:17px;color:#111;}
+  .drawer-close{background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;}
+  .drawer-body{flex:1;overflow-y:auto;padding:16px 20px;}
+  .drawer-item{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;}
+  .drawer-item .di-name{font-weight:700;color:#111;}
+  .drawer-item .di-meta{color:var(--text-dim);font-size:12px;}
+  .drawer-empty{color:var(--text-dim);font-size:13px;text-align:center;padding:40px 0;}
+  .drawer-foot{padding:18px 20px;border-top:1px solid var(--border);background:var(--bg-alt);}
+  .total-row{display:flex;justify-content:space-between;font-size:16px;font-weight:800;margin-bottom:14px;color:#111;}
+  .fulfil-row{display:flex;gap:8px;margin-bottom:14px;}
+  .fulfil-opt{flex:1;text-align:center;padding:9px;border:1px solid var(--border);border-radius:9px;font-size:13px;cursor:pointer;color:var(--text-dim);background:#fff;}
+  .fulfil-opt.active{border-color:var(--accent);color:var(--accent-dark);background:var(--accent-soft);}
+  .drawer-foot input,.drawer-foot textarea{width:100%;background:#fff;border:1px solid var(--border);border-radius:9px;padding:9px 11px;color:var(--text);font-size:13px;margin-bottom:8px;font-family:inherit;}
+  .send-btn{width:100%;background:#25D366;color:#06210f;border:none;border-radius:10px;padding:12px;font-weight:800;font-size:14px;cursor:pointer;}
+
+  .mock-tag{position:fixed;bottom:14px;left:14px;background:#fff;border:1px solid var(--border);color:var(--text-dim);font-size:11px;padding:6px 10px;border-radius:8px;z-index:80;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <div class="logo"><span class="lv">Vinius</span><span class="l3d">3D</span></div>
+    <nav class="links">
+      <a href="#produtos">Produtos</a>
+      <a href="#peca">Faça sua peça</a>
+      <a href="#filamentos">Filamentos</a>
+      <a href="#sobre">Sobre</a>
+      <a href="#contato">Contato</a>
+    </nav>
+    <button class="cart-btn" onclick="openCart()">🛒 Carrinho <span class="cart-count" id="cartCount">0</span></button>
+  </div>
+</header>
+
+<div class="offer-banner">
+  <div class="offer-inner">
+    <span class="offer-label">O QUE TEM AQUI</span>
+    <a class="offer-pill" href="#produtos" onclick="setCat('chaveiros')">🔑 Chaveiros</a>
+    <a class="offer-pill" href="#produtos" onclick="setCat('brinquedos')">🧸 Brinquedos</a>
+    <a class="offer-pill" href="#produtos" onclick="setCat('personalizados')">🎁 Personalizados</a>
+    <a class="offer-pill" href="#produtos" onclick="setCat('miniaturas')">🗿 Miniaturas</a>
+    <a class="offer-pill" href="#produtos" onclick="setCat('educativos')">🏫 Educativos</a>
+    <a class="offer-pill" href="#produtos" onclick="setCat('utilidades')">🛠️ Peças e utilidades</a>
+    <a class="offer-pill filament" href="#filamentos">🧵 Filamentos</a>
+    <a class="offer-pill" href="#peca">✏️ Peça sob encomenda</a>
+  </div>
+</div>
+
+<section class="hero">
+  <span class="badge-note">Impressão 3D sob encomenda</span>
+  <h1>Suas ideias, impressas em 3D com qualidade e capricho</h1>
+  <p class="lead">Chaveiros, brinquedos, miniaturas, peças personalizadas e filamento — do catálogo pronto ou sob medida, do seu jeito.</p>
+  <div class="hero-actions">
+    <a class="btn btn-primary" href="#produtos">Ver produtos</a>
+    <a class="btn btn-secondary" href="#peca">Pedir orçamento</a>
+  </div>
+</section>
+
+<section id="produtos">
+  <div class="section-head">
+    <h2>Produtos</h2>
+    <p>Escolha uma categoria e monte seu pedido. Depois é só finalizar e enviar pelo WhatsApp.</p>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="grid" id="grid"></div>
+</section>
+
+<section id="peca">
+  <div class="section-head">
+    <h2>Faça sua peça</h2>
+    <p>Não achou o que precisa no catálogo? Envie os detalhes e a gente te passa um orçamento.</p>
+  </div>
+  <div class="custom-panel">
+    <div class="field full">
+      <label>Foto ou arquivo de referência</label>
+      <div class="file-drop">📎 Clique para enviar uma imagem ou arquivo (.stl, .jpg, .png...)</div>
+    </div>
+    <div class="field"><label>Medidas (aprox.)</label><input type="text" placeholder="ex: 10cm x 5cm x 3cm"></div>
+    <div class="field"><label>Quantidade</label><input type="number" min="1" value="1"></div>
+    <div class="field"><label>Cor</label><input type="text" placeholder="ex: preto, vermelho..."></div>
+    <div class="field"><label>Seu WhatsApp</label><input type="text" placeholder="(00) 00000-0000"></div>
+    <div class="field full"><label>Observações</label><textarea rows="3" placeholder="Detalhes extras sobre a peça..."></textarea></div>
+    <div class="field full"><button class="btn btn-primary" style="justify-content:center;">Solicitar orçamento</button></div>
+  </div>
+</section>
+
+<section id="filamentos">
+  <div class="section-head">
+    <h2>Filamentos</h2>
+    <p>Preço de referência por quilo. Cores disponíveis, em breve.</p>
+  </div>
+  <div class="fil-table">
+    <div class="fil-row">
+      <div class="fil-name"><span class="fil-dot" style="background:#e5e5e5;border:1px solid #ccc;"></span>PLA</div>
+      <div class="fil-price">Consultar valor</div>
+    </div>
+    <div class="fil-row">
+      <div class="fil-name"><span class="fil-dot" style="background:var(--accent)"></span>PETG</div>
+      <div class="fil-price">Consultar valor</div>
+    </div>
+  </div>
+  <p class="fil-note">Valor varia conforme marca e cor — consulte pelo WhatsApp. Cores disponíveis podem ser adicionadas aqui depois.</p>
+</section>
+
+<section id="sobre">
+  <div class="section-head"><h2>Sobre</h2></div>
+  <div class="about-box">
+    <p>A Vinius 3D nasceu da paixão por transformar ideias em objetos reais através da impressão 3D. Trabalhamos com peças do catálogo e projetos personalizados, sempre com atenção aos detalhes e capricho no acabamento.</p>
+  </div>
+</section>
+
+<section id="contato">
+  <div class="section-head"><h2>Contato</h2></div>
+  <div class="contact-grid">
+    <a class="contact-card" href="#">
+      <div class="ic">💬</div>
+      <div class="lbl">WhatsApp</div>
+      <div class="sub">Fale direto conosco</div>
+    </a>
+    <a class="contact-card" href="#">
+      <div class="ic">📸</div>
+      <div class="lbl">Instagram</div>
+      <div class="sub">@vinius3d</div>
+    </a>
+    <a class="contact-card" href="#">
+      <div class="ic">📍</div>
+      <div class="lbl">Google Maps</div>
+      <div class="sub">Ver localização</div>
+    </a>
+  </div>
+</section>
+
+<footer>Vinius 3D · mockup de layout — conteúdo e preços são exemplos</footer>
+
+<div class="overlay" id="overlay" onclick="closeCart()"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-head">
+    <h3>Seu pedido</h3>
+    <button class="drawer-close" onclick="closeCart()">✕</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+  <div class="drawer-foot">
+    <div class="fulfil-row">
+      <div class="fulfil-opt active" id="optRetirar" onclick="setFulfil('retirar')">📍 Retirar</div>
+      <div class="fulfil-opt" id="optEntrega" onclick="setFulfil('entrega')">🚚 Entrega</div>
+    </div>
+    <input type="text" id="custName" placeholder="Seu nome">
+    <input type="text" id="custWhats" placeholder="Seu WhatsApp">
+    <textarea id="custObs" rows="2" placeholder="Observações (opcional)"></textarea>
+    <div class="total-row"><span>Total</span><span id="cartTotal">R$ 0</span></div>
+    <button class="send-btn" onclick="sendOrder()">Enviar pedido pelo WhatsApp</button>
+  </div>
+</aside>
+
+<div class="mock-tag">Mockup de layout — sem backend real</div>
+
+<script>
+const products = [
+  {id:1, cat:'chaveiros', name:'Chaveiro Geométrico', desc:'Formas geométricas em cores variadas.', price:8, icon:'🔑'},
+  {id:2, cat:'chaveiros', name:'Chaveiro com Nome', desc:'Personalizado com o nome que quiser.', price:12, icon:'🔑'},
+  {id:3, cat:'brinquedos', name:'Dinossauro Articulado', desc:'Brinquedo com juntas móveis, sem montagem.', price:25, icon:'🧸'},
+  {id:4, cat:'brinquedos', name:'Pião Colorido', desc:'Pião equilibrado, gira por mais tempo.', price:10, icon:'🧸'},
+  {id:5, cat:'personalizados', name:'Porta-retrato 3D', desc:'Moldura personalizável com nome ou data.', price:35, icon:'🎁'},
+  {id:6, cat:'personalizados', name:'Topo de Bolo', desc:'Nome ou tema personalizado para festas.', price:18, icon:'🎁'},
+  {id:7, cat:'miniaturas', name:'Miniatura RPG', desc:'Personagem detalhado para mesa de jogo.', price:15, icon:'🗿'},
+  {id:8, cat:'miniaturas', name:'Busto Personalizado', desc:'A partir de foto de referência.', price:40, icon:'🗿'},
+  {id:9, cat:'educativos', name:'Kit Sistema Solar', desc:'Planetas em escala para uso didático.', price:45, icon:'🏫'},
+  {id:10, cat:'educativos', name:'Alfabeto Tátil', desc:'Letras em relevo para alfabetização.', price:30, icon:'🏫'},
+  {id:11, cat:'utilidades', name:'Suporte de Celular', desc:'Ajuste de ângulo, cabe em qualquer mesa.', price:20, icon:'🛠️'},
+  {id:12, cat:'utilidades', name:'Organizador de Fios', desc:'Mantém cabos presos e organizados.', price:14, icon:'🛠️'},
+];
+const categories = [
+  {id:'todos', label:'Todos'},
+  {id:'chaveiros', label:'🔑 Chaveiros'},
+  {id:'brinquedos', label:'🧸 Brinquedos'},
+  {id:'personalizados', label:'🎁 Personalizados'},
+  {id:'miniaturas', label:'🗿 Miniaturas'},
+  {id:'educativos', label:'🏫 Educativos'},
+  {id:'utilidades', label:'🛠️ Peças e utilidades'},
+];
+
+let activeCat = 'todos';
+let qtyDraft = {};
+let cart = {};
+let fulfil = 'retirar';
+
+function renderTabs(){
+  const tabs = document.getElementById('tabs');
+  tabs.innerHTML = categories.map(c =>
+    `<div class="tab ${c.id===activeCat?'active':''}" onclick="setCat('${c.id}')">${c.label}</div>`
+  ).join('');
+}
+function setCat(id){ activeCat = id; renderTabs(); renderGrid(); }
+
+function renderGrid(){
+  const grid = document.getElementById('grid');
+  const list = activeCat==='todos' ? products : products.filter(p=>p.cat===activeCat);
+  grid.innerHTML = list.map(p => {
+    qtyDraft[p.id] = qtyDraft[p.id] || 1;
+    return `
+    <div class="card">
+      <div class="card-img">${p.icon}</div>
+      <div class="card-body">
+        <h3>${p.name}</h3>
+        <p class="desc">${p.desc}</p>
+        <div class="card-foot"><span class="price">R$ ${p.price}</span></div>
+        <div class="qty-row">
+          <button onclick="changeDraft(${p.id},-1)">−</button>
+          <span class="qn" id="qn-${p.id}">${qtyDraft[p.id]}</span>
+          <button onclick="changeDraft(${p.id},1)">+</button>
+        </div>
+        <button class="add-btn" onclick="addToCart(${p.id})">Adicionar ao pedido</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function changeDraft(id, delta){
+  qtyDraft[id] = Math.max(1, (qtyDraft[id]||1) + delta);
+  document.getElementById('qn-'+id).textContent = qtyDraft[id];
+}
+function addToCart(id){
+  const p = products.find(x=>x.id===id);
+  const q = qtyDraft[id] || 1;
+  cart[id] = cart[id] ? {...cart[id], qty: cart[id].qty + q} : {...p, qty:q};
+  qtyDraft[id] = 1;
+  document.getElementById('qn-'+id).textContent = 1;
+  updateCartUI();
+  openCart();
+}
+function removeFromCart(id){ delete cart[id]; updateCartUI(); }
+function cartQtyChange(id, delta){
+  if(!cart[id]) return;
+  cart[id].qty += delta;
+  if(cart[id].qty <= 0) delete cart[id];
+  updateCartUI();
+}
+function updateCartUI(){
+  const items = Object.values(cart);
+  const count = items.reduce((s,i)=>s+i.qty,0);
+  const total = items.reduce((s,i)=>s+i.qty*i.price,0);
+  document.getElementById('cartCount').textContent = count;
+  document.getElementById('cartTotal').textContent = 'R$ ' + total;
+  const body = document.getElementById('drawerBody');
+  body.innerHTML = items.length ? items.map(i => `
+    <div class="drawer-item">
+      <div>
+        <div class="di-name">${i.name}</div>
+        <div class="di-meta">R$ ${i.price} x ${i.qty} = R$ ${i.price*i.qty}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button onclick="cartQtyChange(${i.id},-1)" style="width:22px;height:22px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--text);cursor:pointer;">−</button>
+        <span>${i.qty}</span>
+        <button onclick="cartQtyChange(${i.id},1)" style="width:22px;height:22px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--text);cursor:pointer;">+</button>
+      </div>
+    </div>`).join('') : '<div class="drawer-empty">Seu carrinho está vazio.<br>Adicione produtos para montar o pedido.</div>';
+}
+function setFulfil(v){
+  fulfil = v;
+  document.getElementById('optRetirar').classList.toggle('active', v==='retirar');
+  document.getElementById('optEntrega').classList.toggle('active', v==='entrega');
+}
+function openCart(){ document.getElementById('drawer').classList.add('open'); document.getElementById('overlay').classList.add('open'); }
+function closeCart(){ document.getElementById('drawer').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
+
+function sendOrder(){
+  const items = Object.values(cart);
+  if(!items.length){ alert('Adicione ao menos um produto ao pedido.'); return; }
+  const name = document.getElementById('custName').value || '(nome não informado)';
+  const whats = document.getElementById('custWhats').value || '(whatsapp não informado)';
+  const obs = document.getElementById('custObs').value;
+  const total = items.reduce((s,i)=>s+i.qty*i.price,0);
+  let msg = 'Olá! Gostaria de fazer um pedido:%0A%0A';
+  items.forEach(i => msg += `${i.qty}x ${i.name} — R$ ${i.price*i.qty}%0A`);
+  msg += `%0ATotal: R$ ${total}%0A`;
+  msg += fulfil==='retirar' ? 'Retirada%0A' : 'Entrega%0A';
+  msg += `${name} — ${whats}`;
+  if(obs) msg += `%0AObs: ${obs}`;
+  window.open('https://wa.me/?text=' + msg, '_blank');
+}
+
+renderTabs();
+renderGrid();
+updateCartUI();
+</script>
+
+</body>
+</html>
