@@ -30,16 +30,28 @@
 
   /* ---- top nav ---- */
   header.nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,0.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);}
-  .nav-inner{max-width:1080px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 20px;}
-  .logo{display:flex;align-items:baseline;gap:1px;font-weight:800;font-size:21px;letter-spacing:-0.02em;}
+  .nav-inner{max-width:1080px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 20px;gap:12px;}
+  .logo{display:flex;align-items:baseline;gap:1px;font-weight:800;font-size:21px;letter-spacing:-0.02em;flex-shrink:0;}
   .logo .lv{color:#161616;}
   .logo .l3d{color:var(--accent);}
+  .nav-right{display:flex;align-items:center;gap:14px;}
   nav.links{display:flex;gap:22px;font-size:14px;color:var(--text-dim);}
-  nav.links a{text-decoration:none;transition:color .15s;}
+  nav.links a{text-decoration:none;transition:color .15s;white-space:nowrap;}
   nav.links a:hover{color:var(--text);}
-  .cart-btn{position:relative;background:var(--text);border:1px solid var(--text);color:#fff;padding:9px 14px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;}
+  .cart-btn{position:relative;background:var(--text);border:1px solid var(--text);color:#fff;padding:9px 14px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;flex-shrink:0;white-space:nowrap;}
   .cart-btn:hover{background:#000;}
   .cart-count{background:var(--accent);color:#0a2b16;font-size:11px;font-weight:800;min-width:18px;height:18px;border-radius:999px;display:flex;align-items:center;justify-content:center;padding:0 4px;}
+  .nav-toggle{display:none;background:none;border:1px solid var(--border);border-radius:8px;width:38px;height:38px;font-size:18px;cursor:pointer;color:var(--text);flex-shrink:0;}
+
+  @media(max-width:760px){
+    nav.links{display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border-bottom:1px solid var(--border);flex-direction:column;gap:0;padding:6px 20px 14px;box-shadow:0 8px 16px rgba(0,0,0,0.06);}
+    nav.links.open{display:flex;}
+    nav.links a{padding:10px 0;border-bottom:1px solid var(--border);}
+    nav.links a:last-child{border-bottom:none;}
+    .nav-toggle{display:block;}
+    .cart-btn .cart-label{display:none;}
+    .cart-btn{padding:9px 10px;}
+  }
 
   /* ---- offerings banner ---- */
   .offer-banner{background:var(--bg-alt);border-bottom:1px solid var(--border);}
@@ -147,28 +159,23 @@
 <header class="nav">
   <div class="nav-inner">
     <div class="logo"><span class="lv">Vinius</span><span class="l3d">3D</span></div>
-    <nav class="links">
-      <a href="#produtos">Produtos</a>
-      <a href="#peca">Faça sua peça</a>
-      <a href="#filamentos">Filamentos</a>
-      <a href="#sobre">Sobre</a>
-      <a href="#contato">Contato</a>
+    <nav class="links" id="navLinks">
+      <a href="#produtos" onclick="closeNav()">Produtos</a>
+      <a href="#peca" onclick="closeNav()">Faça sua peça</a>
+      <a href="#filamentos" onclick="closeNav()">Filamentos</a>
+      <a href="#sobre" onclick="closeNav()">Sobre</a>
+      <a href="#contato" onclick="closeNav()">Contato</a>
     </nav>
-    <button class="cart-btn" onclick="openCart()">🛒 Carrinho <span class="cart-count" id="cartCount">0</span></button>
+    <div class="nav-right">
+      <button class="cart-btn" onclick="openCart()">🛒 <span class="cart-label">Carrinho</span> <span class="cart-count" id="cartCount">0</span></button>
+      <button class="nav-toggle" onclick="toggleNav()" aria-label="Menu">☰</button>
+    </div>
   </div>
 </header>
 
 <div class="offer-banner">
-  <div class="offer-inner">
+  <div class="offer-inner" id="offerInner">
     <span class="offer-label">O QUE TEM AQUI</span>
-    <a class="offer-pill" href="#produtos" onclick="setCat('chaveiros')">🔑 Chaveiros</a>
-    <a class="offer-pill" href="#produtos" onclick="setCat('brinquedos')">🧸 Brinquedos</a>
-    <a class="offer-pill" href="#produtos" onclick="setCat('personalizados')">🎁 Personalizados</a>
-    <a class="offer-pill" href="#produtos" onclick="setCat('miniaturas')">🗿 Miniaturas</a>
-    <a class="offer-pill" href="#produtos" onclick="setCat('educativos')">🏫 Educativos</a>
-    <a class="offer-pill" href="#produtos" onclick="setCat('utilidades')">🛠️ Peças e utilidades</a>
-    <a class="offer-pill filament" href="#filamentos">🧵 Filamentos</a>
-    <a class="offer-pill" href="#peca">✏️ Peça sob encomenda</a>
   </div>
 </div>
 
@@ -295,13 +302,21 @@
 </script>
 
 <script>
-/* Os produtos agora vêm do Firestore (collection "site_produtos").
-   Edite tudo — nome, preço, foto, categoria — pelo painel em /admin/ (login necessário). */
+/* Produtos e categorias agora vêm do Firestore ("site_produtos" e "site_categorias").
+   Edite tudo — nome, preço, foto, categorias — pelo painel em /admin/ (login necessário). */
 let products = [];
+let categories = [];
 
+async function loadCategories(){
+  try{
+    const snap = await db.collection('site_categorias').orderBy('ordem').get();
+    categories = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  }catch(e){
+    console.error('Erro ao carregar categorias do Firestore:', e);
+    categories = [];
+  }
+}
 async function loadProducts(){
-  const grid = document.getElementById('grid');
-  grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:40px 0;">Carregando produtos...</p>';
   try{
     const snap = await db.collection('site_produtos').orderBy('name').get();
     products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -309,7 +324,13 @@ async function loadProducts(){
     console.error('Erro ao carregar produtos do Firestore:', e);
     products = [];
   }
+}
+async function init(){
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:40px 0;">Carregando produtos...</p>';
+  await Promise.all([loadCategories(), loadProducts()]);
   renderTabs();
+  renderOfferBanner();
   if(!products.length){
     grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-dim);">Nenhum produto cadastrado ainda. Adicione produtos pelo painel de admin em <a href="/admin/">/admin/</a>.</p>';
   }else{
@@ -317,15 +338,17 @@ async function loadProducts(){
   }
   updateCartUI();
 }
-const categories = [
-  {id:'todos', label:'Todos'},
-  {id:'chaveiros', label:'🔑 Chaveiros'},
-  {id:'brinquedos', label:'🧸 Brinquedos'},
-  {id:'personalizados', label:'🎁 Personalizados'},
-  {id:'miniaturas', label:'🗿 Miniaturas'},
-  {id:'educativos', label:'🏫 Educativos'},
-  {id:'utilidades', label:'🛠️ Peças e utilidades'},
-];
+function catLabel(c){ return c.icon ? `${c.icon} ${c.name}` : (c.name || c.id); }
+function renderOfferBanner(){
+  const wrap = document.getElementById('offerInner');
+  const catPills = categories.map(c => `<a class="offer-pill" href="#produtos" onclick="setCat('${c.id}')">${catLabel(c)}</a>`).join('');
+  wrap.innerHTML = `
+    <span class="offer-label">O QUE TEM AQUI</span>
+    ${catPills}
+    <a class="offer-pill filament" href="#filamentos">🧵 Filamentos</a>
+    <a class="offer-pill" href="#peca">✏️ Peça sob encomenda</a>
+  `;
+}
 
 let activeCat = 'todos';
 let qtyDraft = {};
@@ -334,8 +357,9 @@ let fulfil = 'retirar';
 
 function renderTabs(){
   const tabs = document.getElementById('tabs');
-  tabs.innerHTML = categories.map(c =>
-    `<div class="tab ${c.id===activeCat?'active':''}" onclick="setCat('${c.id}')">${c.label}</div>`
+  const all = [{id:'todos', name:'Todos', icon:''}, ...categories];
+  tabs.innerHTML = all.map(c =>
+    `<div class="tab ${c.id===activeCat?'active':''}" onclick="setCat('${c.id}')">${catLabel(c)}</div>`
   ).join('');
 }
 function setCat(id){ activeCat = id; renderTabs(); renderGrid(); }
@@ -407,6 +431,8 @@ function setFulfil(v){
   document.getElementById('optRetirar').classList.toggle('active', v==='retirar');
   document.getElementById('optEntrega').classList.toggle('active', v==='entrega');
 }
+function toggleNav(){ document.getElementById('navLinks').classList.toggle('open'); }
+function closeNav(){ document.getElementById('navLinks').classList.remove('open'); }
 function openCart(){ document.getElementById('drawer').classList.add('open'); document.getElementById('overlay').classList.add('open'); }
 function closeCart(){ document.getElementById('drawer').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
 
@@ -426,7 +452,7 @@ function sendOrder(){
   window.open('https://wa.me/?text=' + msg, '_blank');
 }
 
-loadProducts();
+init();
 </script>
 
 </body>
