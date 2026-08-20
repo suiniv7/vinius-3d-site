@@ -216,7 +216,7 @@
 <section id="contato">
   <div class="section-head"><h2>Contato</h2></div>
   <div class="contact-grid">
-    <a class="contact-card" href="#">
+    <a class="contact-card" href="https://wa.me/5598991019019" target="_blank" rel="noopener">
       <div class="ic">💬</div>
       <div class="lbl">WhatsApp</div>
       <div class="sub">Fale direto conosco</div>
@@ -420,7 +420,7 @@ function sendPecaOrcamento(){
   if(whats) msg += `Meu WhatsApp: ${whats}%0A`;
   if(obs) msg += `Observações: ${obs}%0A`;
   msg += '%0AVou mandar a foto/arquivo de referência aqui pelo WhatsApp.';
-  window.open('https://wa.me/?text=' + msg, '_blank');
+  window.open('https://wa.me/5598991019019?text=' + msg, '_blank');
 }
 
 function toggleNav(){ document.getElementById('navLinks').classList.toggle('open'); }
@@ -441,7 +441,7 @@ function sendOrder(){
   msg += fulfil==='retirar' ? 'Retirada%0A' : 'Entrega%0A';
   msg += `${name} — ${whats}`;
   if(obs) msg += `%0AObs: ${obs}`;
-  window.open('https://wa.me/?text=' + msg, '_blank');
+  window.open('https://wa.me/5598991019019?text=' + msg, '_blank');
 }
 
 init();
