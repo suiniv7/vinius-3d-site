@@ -59,7 +59,6 @@
   .offer-label{font-size:12px;font-weight:700;color:var(--text-dim);white-space:nowrap;padding-right:6px;border-right:1px solid var(--border);margin-right:2px;}
   .offer-pill{white-space:nowrap;background:#fff;border:1px solid var(--border);color:var(--text);font-size:13px;font-weight:600;padding:7px 14px;border-radius:999px;text-decoration:none;display:flex;align-items:center;gap:6px;transition:border-color .15s, color .15s;}
   .offer-pill:hover{border-color:var(--accent);color:var(--accent-dark);}
-  .offer-pill.filament{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-dark);}
 
   /* ---- hero ---- */
   .hero{padding:80px 20px 64px;text-align:center;background:radial-gradient(circle at 50% 0%, rgba(76,175,109,0.08), transparent 60%);}
@@ -108,15 +107,6 @@
   .file-drop{border:1.5px dashed var(--border);border-radius:9px;padding:22px;text-align:center;color:var(--text-dim);font-size:13px;cursor:pointer;background:#fff;}
   .file-drop:hover{border-color:var(--accent);color:var(--accent-dark);}
 
-  /* ---- filamentos ---- */
-  .fil-table{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
-  .fil-row{display:flex;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border);align-items:center;}
-  .fil-row:last-child{border-bottom:none;}
-  .fil-name{font-weight:700;display:flex;align-items:center;gap:10px;color:#111;}
-  .fil-dot{width:12px;height:12px;border-radius:50%;}
-  .fil-price{color:var(--accent-dark);font-weight:800;}
-  .fil-note{font-size:13px;color:var(--text-dim);margin-top:12px;}
-
   /* ---- sobre ---- */
   .about-box{background:var(--bg-alt);border:1px solid var(--border);border-radius:var(--radius);padding:28px;max-width:640px;}
 
@@ -162,7 +152,6 @@
     <nav class="links" id="navLinks">
       <a href="#produtos" onclick="closeNav()">Produtos</a>
       <a href="#peca" onclick="closeNav()">Faça sua peça</a>
-      <a href="#filamentos" onclick="closeNav()">Filamentos</a>
       <a href="#sobre" onclick="closeNav()">Sobre</a>
       <a href="#contato" onclick="closeNav()">Contato</a>
     </nav>
@@ -182,7 +171,7 @@
 <section class="hero">
   <span class="badge-note">Impressão 3D sob encomenda</span>
   <h1>Suas ideias, impressas em 3D com qualidade e capricho</h1>
-  <p class="lead">Chaveiros, brinquedos, miniaturas, peças personalizadas e filamento — do catálogo pronto ou sob medida, do seu jeito.</p>
+  <p class="lead">Chaveiros, brinquedos, miniaturas e peças personalizadas — do catálogo pronto ou sob medida, do seu jeito.</p>
   <div class="hero-actions">
     <a class="btn btn-primary" href="#produtos">Ver produtos</a>
     <a class="btn btn-secondary" href="#peca">Pedir orçamento</a>
@@ -208,31 +197,13 @@
       <label>Foto ou arquivo de referência</label>
       <div class="file-drop">📎 Clique para enviar uma imagem ou arquivo (.stl, .jpg, .png...)</div>
     </div>
-    <div class="field"><label>Medidas (aprox.)</label><input type="text" placeholder="ex: 10cm x 5cm x 3cm"></div>
-    <div class="field"><label>Quantidade</label><input type="number" min="1" value="1"></div>
-    <div class="field"><label>Cor</label><input type="text" placeholder="ex: preto, vermelho..."></div>
-    <div class="field"><label>Seu WhatsApp</label><input type="text" placeholder="(00) 00000-0000"></div>
-    <div class="field full"><label>Observações</label><textarea rows="3" placeholder="Detalhes extras sobre a peça..."></textarea></div>
-    <div class="field full"><button class="btn btn-primary" style="justify-content:center;">Solicitar orçamento</button></div>
+    <div class="field"><label>Medidas (aprox.)</label><input type="text" id="pecaMedidas" placeholder="ex: 10cm x 5cm x 3cm"></div>
+    <div class="field"><label>Quantidade</label><input type="number" id="pecaQtd" min="1" value="1"></div>
+    <div class="field"><label>Cor</label><input type="text" id="pecaCor" placeholder="ex: preto, vermelho..."></div>
+    <div class="field"><label>Seu WhatsApp</label><input type="text" id="pecaWhats" placeholder="(00) 00000-0000"></div>
+    <div class="field full"><label>Observações</label><textarea rows="3" id="pecaObs" placeholder="Detalhes extras sobre a peça..."></textarea></div>
+    <div class="field full"><button class="btn btn-primary" style="justify-content:center;" onclick="sendPecaOrcamento()">Solicitar orçamento</button></div>
   </div>
-</section>
-
-<section id="filamentos">
-  <div class="section-head">
-    <h2>Filamentos</h2>
-    <p>Preço de referência por quilo. Cores disponíveis, em breve.</p>
-  </div>
-  <div class="fil-table">
-    <div class="fil-row">
-      <div class="fil-name"><span class="fil-dot" style="background:#e5e5e5;border:1px solid #ccc;"></span>PLA</div>
-      <div class="fil-price">Consultar valor</div>
-    </div>
-    <div class="fil-row">
-      <div class="fil-name"><span class="fil-dot" style="background:var(--accent)"></span>PETG</div>
-      <div class="fil-price">Consultar valor</div>
-    </div>
-  </div>
-  <p class="fil-note">Valor varia conforme marca e cor — consulte pelo WhatsApp. Cores disponíveis podem ser adicionadas aqui depois.</p>
 </section>
 
 <section id="sobre">
@@ -345,7 +316,6 @@ function renderOfferBanner(){
   wrap.innerHTML = `
     <span class="offer-label">O QUE TEM AQUI</span>
     ${catPills}
-    <a class="offer-pill filament" href="#filamentos">🧵 Filamentos</a>
     <a class="offer-pill" href="#peca">✏️ Peça sob encomenda</a>
   `;
 }
@@ -431,6 +401,28 @@ function setFulfil(v){
   document.getElementById('optRetirar').classList.toggle('active', v==='retirar');
   document.getElementById('optEntrega').classList.toggle('active', v==='entrega');
 }
+function sendPecaOrcamento(){
+  const medidas = document.getElementById('pecaMedidas').value.trim();
+  const qtd = document.getElementById('pecaQtd').value || '1';
+  const cor = document.getElementById('pecaCor').value.trim();
+  const whats = document.getElementById('pecaWhats').value.trim();
+  const obs = document.getElementById('pecaObs').value.trim();
+
+  if(!medidas && !cor && !obs){
+    alert('Preenche pelo menos as medidas, a cor ou uma observação pra gente entender o que você precisa.');
+    return;
+  }
+
+  let msg = 'Olá! Gostaria de um orçamento pra uma peça personalizada (Faça sua peça):%0A%0A';
+  msg += `Quantidade: ${qtd}%0A`;
+  if(medidas) msg += `Medidas: ${medidas}%0A`;
+  if(cor) msg += `Cor: ${cor}%0A`;
+  if(whats) msg += `Meu WhatsApp: ${whats}%0A`;
+  if(obs) msg += `Observações: ${obs}%0A`;
+  msg += '%0AVou mandar a foto/arquivo de referência aqui pelo WhatsApp.';
+  window.open('https://wa.me/?text=' + msg, '_blank');
+}
+
 function toggleNav(){ document.getElementById('navLinks').classList.toggle('open'); }
 function closeNav(){ document.getElementById('navLinks').classList.remove('open'); }
 function openCart(){ document.getElementById('drawer').classList.add('open'); document.getElementById('overlay').classList.add('open'); }
