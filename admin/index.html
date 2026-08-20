@@ -1,1 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Vinius 3D</title>
+<style>
+  :root{
+    --bg:#ffffff;
+    --bg-alt:#f6f7f6;
+    --border:#e4e6e4;
+    --text:#161616;
+    --text-dim:#6b6f6c;
+    --accent:#4CAF6D;
+    --accent-dark:#398f56;
+    --accent-soft:rgba(76,175,109,0.12);
+    --danger:#d84343;
+    --danger-soft:rgba(216,67,67,0.10);
+    --radius:12px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg-alt);color:var(--text);line-height:1.5;}
+  h1,h2,h3{margin:0 0 8px;font-weight:800;letter-spacing:-0.01em;}
+  p{margin:0 0 12px;color:var(--text-dim);}
 
+  header{background:#fff;border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
+  .logo{font-weight:800;font-size:18px;}
+  .logo .lv{color:#161616;} .logo .l3d{color:var(--accent);}
+  .logo .tag{font-size:12px;font-weight:600;color:var(--text-dim);margin-left:8px;}
+  main{max-width:760px;margin:0 auto;padding:24px 20px 80px;}
+
+  .btn{border:none;border-radius:9px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer;}
+  .btn-primary{background:var(--accent);color:#0a2b16;}
+  .btn-primary:hover{background:var(--accent-dark);color:#fff;}
+  .btn-ghost{background:none;border:1px solid var(--border);color:var(--text-dim);}
+  .btn-ghost:hover{border-color:var(--text);color:var(--text);}
+  .btn-danger{background:var(--danger-soft);color:var(--danger);border:1px solid var(--danger);}
+  .btn-danger:hover{background:var(--danger);color:#fff;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+
+  /* login */
+  #loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .login-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:32px;max-width:340px;width:100%;text-align:center;}
+  .login-card .logo{justify-content:center;display:flex;margin-bottom:18px;font-size:22px;}
+  .field{display:flex;flex-direction:column;gap:6px;text-align:left;margin-bottom:14px;}
+  .field label{font-size:13px;font-weight:700;color:var(--text-dim);}
+  .field input,.field select,.field textarea{background:#fff;border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-size:14px;font-family:inherit;width:100%;}
+  #loginError{color:var(--danger);font-size:13px;min-height:18px;margin-bottom:8px;}
+
+  /* panel */
+  #panel{display:none;}
+  .card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin-bottom:24px;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:640px){.form-grid{grid-template-columns:1fr;}}
+  .field.full{grid-column:1/-1;}
+  .form-actions{display:flex;gap:10px;margin-top:6px;}
+
+  .product-row{display:flex;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);}
+  .product-row:last-child{border-bottom:none;}
+  .thumb{width:52px;height:52px;border-radius:8px;background:var(--bg-alt);display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden;flex-shrink:0;}
+  .thumb img{width:100%;height:100%;object-fit:cover;}
+  .p-info{flex:1;min-width:0;}
+  .p-name{font-weight:700;font-size:14px;}
+  .p-meta{font-size:12px;color:var(--text-dim);}
+  .p-actions{display:flex;gap:8px;flex-shrink:0;}
+  .p-actions button{padding:6px 12px;font-size:12px;}
+
+  #statusMsg{font-size:13px;margin-top:10px;min-height:18px;}
+  #statusMsg.ok{color:var(--accent-dark);}
+  #statusMsg.err{color:var(--danger);}
+  .empty-note{color:var(--text-dim);font-size:13px;text-align:center;padding:24px 0;}
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="logo"><span class="lv">Vinius</span><span class="l3d">3D</span></div>
+    <p style="margin-bottom:20px;">Painel de administração</p>
+    <div class="field">
+      <label>E-mail</label>
+      <input type="email" id="loginEmail" placeholder="seu@email.com">
+    </div>
+    <div class="field">
+      <label>Senha</label>
+      <input type="password" id="loginPass" placeholder="••••••••">
+    </div>
+    <div id="loginError"></div>
+    <button class="btn btn-primary" style="width:100%;" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<div id="panel">
+  <header>
+    <div class="logo"><span class="lv">Vinius</span><span class="l3d">3D</span><span class="tag">admin</span></div>
+    <button class="btn btn-ghost" onclick="doLogout()">Sair</button>
+  </header>
+  <main>
+    <div class="card">
+      <h2 id="formTitle">Novo produto</h2>
+      <div class="form-grid">
+        <div class="field full">
+          <label>Nome</label>
+          <input type="text" id="fName" placeholder="ex: Chaveiro Geométrico">
+        </div>
+        <div class="field">
+          <label>Categoria</label>
+          <select id="fCat">
+            <option value="chaveiros">🔑 Chaveiros</option>
+            <option value="brinquedos">🧸 Brinquedos</option>
+            <option value="personalizados">🎁 Personalizados</option>
+            <option value="miniaturas">🗿 Miniaturas</option>
+            <option value="educativos">🏫 Educativos</option>
+            <option value="utilidades">🛠️ Peças e utilidades</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Preço (R$)</label>
+          <input type="number" id="fPrice" min="0" step="0.01" placeholder="ex: 15">
+        </div>
+        <div class="field full">
+          <label>Descrição curta</label>
+          <textarea id="fDesc" rows="2" placeholder="Uma frase curta sobre o produto"></textarea>
+        </div>
+        <div class="field">
+          <label>Emoji (aparece se não tiver foto)</label>
+          <input type="text" id="fIcon" placeholder="ex: 🔑" maxlength="4">
+        </div>
+        <div class="field">
+          <label>Foto (opcional)</label>
+          <input type="file" id="fPhoto" accept="image/*">
+        </div>
+      </div>
+      <div id="statusMsg"></div>
+      <div class="form-actions">
+        <button class="btn btn-primary" id="saveBtn" onclick="saveProduct()">Adicionar produto</button>
+        <button class="btn btn-ghost" id="cancelBtn" onclick="resetForm()" style="display:none;">Cancelar edição</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Produtos cadastrados</h2>
+      <div id="productList"></div>
+    </div>
+  </main>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-storage-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyB02Aw15fpyDYpWX1F8ravJXrrlyRt_I9U",
+  authDomain: "vinius3d-site.firebaseapp.com",
+  projectId: "vinius3d-site",
+  storageBucket: "vinius3d-site.firebasestorage.app",
+  messagingSenderId: "444175675502",
+  appId: "1:444175675502:web:db7357518c52e48eb6767f",
+  measurementId: "G-XN3S7FJNSL"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const storage = firebase.storage();
+
+let editingId = null;
+let unsubscribe = null;
+
+// ---- login/logout ----
+function doLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginError');
+  err.textContent = '';
+  auth.signInWithEmailAndPassword(email, pass).catch(e => {
+    err.textContent = 'Não consegui entrar: verifica e-mail e senha.';
+    console.error(e);
+  });
+}
+function doLogout(){ auth.signOut(); }
+
+auth.onAuthStateChanged(user => {
+  if(user){
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('panel').style.display = 'block';
+    startListening();
+  }else{
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('panel').style.display = 'none';
+    if(unsubscribe) unsubscribe();
+  }
+});
+
+// ---- lista em tempo real ----
+function startListening(){
+  if(unsubscribe) unsubscribe();
+  unsubscribe = db.collection('site_produtos').orderBy('name').onSnapshot(snap => {
+    const list = document.getElementById('productList');
+    if(snap.empty){
+      list.innerHTML = '<p class="empty-note">Nenhum produto cadastrado ainda. Use o formulário acima pra adicionar o primeiro.</p>';
+      return;
+    }
+    list.innerHTML = snap.docs.map(d => {
+      const p = d.data();
+      const thumb = p.img ? `<img src="${p.img}" alt="">` : (p.icon || '📦');
+      return `
+      <div class="product-row">
+        <div class="thumb">${p.img ? thumb : `<span>${thumb}</span>`}</div>
+        <div class="p-info">
+          <div class="p-name">${p.name || '(sem nome)'}</div>
+          <div class="p-meta">${categoryLabel(p.cat)} · R$ ${Number(p.price||0).toFixed(2)}</div>
+        </div>
+        <div class="p-actions">
+          <button class="btn btn-ghost" onclick='editProduct(${JSON.stringify(d.id)})'>Editar</button>
+          <button class="btn btn-danger" onclick='deleteProduct(${JSON.stringify(d.id)})'>Excluir</button>
+        </div>
+      </div>`;
+    }).join('');
+  }, e => {
+    console.error('Erro ao ouvir produtos:', e);
+    document.getElementById('productList').innerHTML = '<p class="empty-note">Erro ao carregar produtos. Confere se o Firestore e as regras de segurança estão configurados.</p>';
+  });
+}
+function categoryLabel(cat){
+  const map = {chaveiros:'🔑 Chaveiros', brinquedos:'🧸 Brinquedos', personalizados:'🎁 Personalizados', miniaturas:'🗿 Miniaturas', educativos:'🏫 Educativos', utilidades:'🛠️ Utilidades'};
+  return map[cat] || cat || '—';
+}
+
+// ---- salvar (novo ou edição) ----
+async function saveProduct(){
+  const name = document.getElementById('fName').value.trim();
+  const cat = document.getElementById('fCat').value;
+  const price = parseFloat(document.getElementById('fPrice').value);
+  const desc = document.getElementById('fDesc').value.trim();
+  const icon = document.getElementById('fIcon').value.trim();
+  const file = document.getElementById('fPhoto').files[0];
+  const status = document.getElementById('statusMsg');
+  const saveBtn = document.getElementById('saveBtn');
+
+  if(!name || !cat || isNaN(price)){
+    status.className = 'err';
+    status.textContent = 'Preenche pelo menos nome, categoria e preço.';
+    return;
+  }
+
+  saveBtn.disabled = true;
+  status.className = '';
+  status.textContent = 'Salvando...';
+
+  try{
+    const data = { name, cat, price, desc, icon: icon || null };
+
+    if(file){
+      status.textContent = 'Enviando foto...';
+      const path = `site_produtos/${Date.now()}-${file.name}`;
+      const ref = storage.ref().child(path);
+      await ref.put(file);
+      data.img = await ref.getDownloadURL();
+    }
+
+    if(editingId){
+      await db.collection('site_produtos').doc(editingId).update(data);
+      status.className = 'ok';
+      status.textContent = 'Produto atualizado!';
+    }else{
+      data.img = data.img || null;
+      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      await db.collection('site_produtos').add(data);
+      status.className = 'ok';
+      status.textContent = 'Produto adicionado!';
+    }
+    resetForm();
+  }catch(e){
+    console.error(e);
+    status.className = 'err';
+    status.textContent = 'Deu erro ao salvar. Confere a conexão e as regras do Firestore/Storage.';
+  }finally{
+    saveBtn.disabled = false;
+  }
+}
+
+async function editProduct(id){
+  const doc = await db.collection('site_produtos').doc(id).get();
+  if(!doc.exists) return;
+  const p = doc.data();
+  editingId = id;
+  document.getElementById('formTitle').textContent = 'Editar produto';
+  document.getElementById('fName').value = p.name || '';
+  document.getElementById('fCat').value = p.cat || 'chaveiros';
+  document.getElementById('fPrice').value = p.price ?? '';
+  document.getElementById('fDesc').value = p.desc || '';
+  document.getElementById('fIcon').value = p.icon || '';
+  document.getElementById('fPhoto').value = '';
+  document.getElementById('saveBtn').textContent = 'Salvar alterações';
+  document.getElementById('cancelBtn').style.display = 'inline-block';
+  document.getElementById('statusMsg').textContent = '';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+async function deleteProduct(id){
+  if(!confirm('Excluir esse produto? Não dá pra desfazer.')) return;
+  try{
+    await db.collection('site_produtos').doc(id).delete();
+  }catch(e){
+    console.error(e);
+    alert('Erro ao excluir. Tenta de novo.');
+  }
+}
+
+function resetForm(){
+  editingId = null;
+  document.getElementById('formTitle').textContent = 'Novo produto';
+  document.getElementById('fName').value = '';
+  document.getElementById('fCat').value = 'chaveiros';
+  document.getElementById('fPrice').value = '';
+  document.getElementById('fDesc').value = '';
+  document.getElementById('fIcon').value = '';
+  document.getElementById('fPhoto').value = '';
+  document.getElementById('saveBtn').textContent = 'Adicionar produto';
+  document.getElementById('cancelBtn').style.display = 'none';
+}
+</script>
+</body>
+</html>
