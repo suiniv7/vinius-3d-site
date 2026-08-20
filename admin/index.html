@@ -98,6 +98,27 @@
   </header>
   <main>
     <div class="card">
+      <h2 id="catFormTitle">Categorias</h2>
+      <p style="margin-top:-6px;">Aparecem no filtro de produtos e na faixa "O que tem aqui" do site.</p>
+      <div class="form-grid">
+        <div class="field">
+          <label>Nome</label>
+          <input type="text" id="cName" placeholder="ex: Chaveiros">
+        </div>
+        <div class="field">
+          <label>Emoji</label>
+          <input type="text" id="cIcon" placeholder="ex: 🔑" maxlength="4">
+        </div>
+      </div>
+      <div id="catStatusMsg" style="font-size:13px;margin-top:4px;min-height:18px;"></div>
+      <div class="form-actions">
+        <button class="btn btn-primary" id="catSaveBtn" onclick="saveCategory()">Adicionar categoria</button>
+        <button class="btn btn-ghost" id="catCancelBtn" onclick="resetCatForm()" style="display:none;">Cancelar edição</button>
+      </div>
+      <div id="categoryList" style="margin-top:16px;"></div>
+    </div>
+
+    <div class="card">
       <h2 id="formTitle">Novo produto</h2>
       <div class="form-grid">
         <div class="field full">
@@ -106,14 +127,7 @@
         </div>
         <div class="field">
           <label>Categoria</label>
-          <select id="fCat">
-            <option value="chaveiros">🔑 Chaveiros</option>
-            <option value="brinquedos">🧸 Brinquedos</option>
-            <option value="personalizados">🎁 Personalizados</option>
-            <option value="miniaturas">🗿 Miniaturas</option>
-            <option value="educativos">🏫 Educativos</option>
-            <option value="utilidades">🛠️ Peças e utilidades</option>
-          </select>
+          <select id="fCat"><option value="">Cadastre uma categoria primeiro</option></select>
         </div>
         <div class="field">
           <label>Preço (R$)</label>
@@ -167,6 +181,15 @@ const storage = firebase.storage();
 
 let editingId = null;
 let unsubscribe = null;
+let catUnsubscribe = null;
+let editingCatId = null;
+let categories = [];
+
+function slugify(str){
+  const diacritics = new RegExp('[̀-ͯ]', 'g');
+  const noAccents = str.toString().normalize('NFD').replace(diacritics, '');
+  return noAccents.toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+}
 
 // ---- login/logout ----
 function doLogin(){
@@ -185,13 +208,122 @@ auth.onAuthStateChanged(user => {
   if(user){
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('panel').style.display = 'block';
+    catStartListening();
     startListening();
   }else{
     document.getElementById('loginScreen').style.display = 'flex';
     document.getElementById('panel').style.display = 'none';
     if(unsubscribe) unsubscribe();
+    if(catUnsubscribe) catUnsubscribe();
   }
 });
+
+// ---- categorias em tempo real ----
+function catStartListening(){
+  if(catUnsubscribe) catUnsubscribe();
+  catUnsubscribe = db.collection('site_categorias').orderBy('ordem').onSnapshot(snap => {
+    categories = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderCategoryList();
+    renderCatSelect();
+  }, e => {
+    console.error('Erro ao ouvir categorias:', e);
+    document.getElementById('categoryList').innerHTML = '<p class="empty-note">Erro ao carregar categorias. Confere as regras de segurança do Firestore.</p>';
+  });
+}
+
+function renderCategoryList(){
+  const list = document.getElementById('categoryList');
+  if(!categories.length){
+    list.innerHTML = '<p class="empty-note">Nenhuma categoria ainda. Cadastre a primeira acima.</p>';
+    return;
+  }
+  list.innerHTML = categories.map(c => `
+    <div class="product-row">
+      <div class="thumb"><span>${c.icon || '🏷️'}</span></div>
+      <div class="p-info">
+        <div class="p-name">${c.name || c.id}</div>
+      </div>
+      <div class="p-actions">
+        <button class="btn btn-ghost" onclick='editCategory(${JSON.stringify(c.id)})'>Editar</button>
+        <button class="btn btn-danger" onclick='deleteCategory(${JSON.stringify(c.id)})'>Excluir</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderCatSelect(){
+  const sel = document.getElementById('fCat');
+  const current = sel.value;
+  if(!categories.length){
+    sel.innerHTML = '<option value="">Cadastre uma categoria primeiro</option>';
+    return;
+  }
+  sel.innerHTML = categories.map(c => `<option value="${c.id}">${c.icon ? c.icon+' ' : ''}${c.name}</option>`).join('');
+  if(categories.some(c => c.id === current)) sel.value = current;
+}
+
+async function saveCategory(){
+  const name = document.getElementById('cName').value.trim();
+  const icon = document.getElementById('cIcon').value.trim();
+  const status = document.getElementById('catStatusMsg');
+  const btn = document.getElementById('catSaveBtn');
+  if(!name){
+    status.style.color = 'var(--danger)';
+    status.textContent = 'Digita um nome pra categoria.';
+    return;
+  }
+  btn.disabled = true;
+  status.style.color = '';
+  status.textContent = 'Salvando...';
+  try{
+    if(editingCatId){
+      await db.collection('site_categorias').doc(editingCatId).update({ name, icon: icon || null });
+      status.style.color = 'var(--accent-dark)';
+      status.textContent = 'Categoria atualizada!';
+    }else{
+      const id = slugify(name) || ('cat-' + Date.now());
+      await db.collection('site_categorias').doc(id).set({ name, icon: icon || null, ordem: categories.length });
+      status.style.color = 'var(--accent-dark)';
+      status.textContent = 'Categoria adicionada!';
+    }
+    resetCatForm();
+  }catch(e){
+    console.error(e);
+    status.style.color = 'var(--danger)';
+    status.textContent = 'Deu erro ao salvar a categoria. Confere as regras de segurança.';
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+function editCategory(id){
+  const c = categories.find(x => x.id === id);
+  if(!c) return;
+  editingCatId = id;
+  document.getElementById('cName').value = c.name || '';
+  document.getElementById('cIcon').value = c.icon || '';
+  document.getElementById('catSaveBtn').textContent = 'Salvar categoria';
+  document.getElementById('catCancelBtn').style.display = 'inline-block';
+  document.getElementById('catStatusMsg').textContent = '';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+async function deleteCategory(id){
+  if(!confirm('Excluir essa categoria? Produtos que já estão nela não são apagados, só deixam de aparecer nos filtros até você trocar a categoria deles.')) return;
+  try{
+    await db.collection('site_categorias').doc(id).delete();
+  }catch(e){
+    console.error(e);
+    alert('Erro ao excluir. Tenta de novo.');
+  }
+}
+
+function resetCatForm(){
+  editingCatId = null;
+  document.getElementById('cName').value = '';
+  document.getElementById('cIcon').value = '';
+  document.getElementById('catSaveBtn').textContent = 'Adicionar categoria';
+  document.getElementById('catCancelBtn').style.display = 'none';
+}
 
 // ---- lista em tempo real ----
 function startListening(){
@@ -224,8 +356,9 @@ function startListening(){
   });
 }
 function categoryLabel(cat){
-  const map = {chaveiros:'🔑 Chaveiros', brinquedos:'🧸 Brinquedos', personalizados:'🎁 Personalizados', miniaturas:'🗿 Miniaturas', educativos:'🏫 Educativos', utilidades:'🛠️ Utilidades'};
-  return map[cat] || cat || '—';
+  const c = categories.find(x => x.id === cat);
+  if(c) return (c.icon ? c.icon + ' ' : '') + c.name;
+  return cat || '—';
 }
 
 // ---- salvar (novo ou edição) ----
@@ -288,7 +421,7 @@ async function editProduct(id){
   editingId = id;
   document.getElementById('formTitle').textContent = 'Editar produto';
   document.getElementById('fName').value = p.name || '';
-  document.getElementById('fCat').value = p.cat || 'chaveiros';
+  document.getElementById('fCat').value = p.cat || '';
   document.getElementById('fPrice').value = p.price ?? '';
   document.getElementById('fDesc').value = p.desc || '';
   document.getElementById('fIcon').value = p.icon || '';
@@ -313,7 +446,7 @@ function resetForm(){
   editingId = null;
   document.getElementById('formTitle').textContent = 'Novo produto';
   document.getElementById('fName').value = '';
-  document.getElementById('fCat').value = 'chaveiros';
+  renderCatSelect();
   document.getElementById('fPrice').value = '';
   document.getElementById('fDesc').value = '';
   document.getElementById('fIcon').value = '';
