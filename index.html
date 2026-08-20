@@ -104,8 +104,6 @@
   .field label{font-size:13px;font-weight:700;color:var(--text-dim);}
   .field input,.field select,.field textarea{background:#fff;border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-size:14px;font-family:inherit;}
   .field.full{grid-column:1/-1;}
-  .file-drop{border:1.5px dashed var(--border);border-radius:9px;padding:22px;text-align:center;color:var(--text-dim);font-size:13px;cursor:pointer;background:#fff;}
-  .file-drop:hover{border-color:var(--accent);color:var(--accent-dark);}
 
   /* ---- sobre ---- */
   .about-box{background:var(--bg-alt);border:1px solid var(--border);border-radius:var(--radius);padding:28px;max-width:640px;}
@@ -193,16 +191,16 @@
     <p>Não achou o que precisa no catálogo? Envie os detalhes e a gente te passa um orçamento.</p>
   </div>
   <div class="custom-panel">
-    <div class="field full">
-      <label>Foto ou arquivo de referência</label>
-      <div class="file-drop">📎 Clique para enviar uma imagem ou arquivo (.stl, .jpg, .png...)</div>
-    </div>
+    <div class="field full"><label>Nome ou descrição da peça</label><input type="text" id="pecaNome" placeholder="ex: suporte de celular articulado"></div>
     <div class="field"><label>Medidas (aprox.)</label><input type="text" id="pecaMedidas" placeholder="ex: 10cm x 5cm x 3cm"></div>
     <div class="field"><label>Quantidade</label><input type="number" id="pecaQtd" min="1" value="1"></div>
     <div class="field"><label>Cor</label><input type="text" id="pecaCor" placeholder="ex: preto, vermelho..."></div>
     <div class="field"><label>Seu WhatsApp</label><input type="text" id="pecaWhats" placeholder="(00) 00000-0000"></div>
     <div class="field full"><label>Observações</label><textarea rows="3" id="pecaObs" placeholder="Detalhes extras sobre a peça..."></textarea></div>
-    <div class="field full"><button class="btn btn-primary" style="justify-content:center;" onclick="sendPecaOrcamento()">Solicitar orçamento</button></div>
+    <div class="field full">
+      <button class="btn btn-primary" style="justify-content:center;" onclick="sendPecaOrcamento()">Solicitar orçamento pelo WhatsApp</button>
+      <p style="font-size:12px;margin-top:8px;">📎 Tem foto ou arquivo de referência? Manda direto na conversa do WhatsApp depois de clicar aqui.</p>
+    </div>
   </div>
 </section>
 
@@ -221,7 +219,7 @@
       <div class="lbl">WhatsApp</div>
       <div class="sub">Fale direto conosco</div>
     </a>
-    <a class="contact-card" href="#">
+    <a class="contact-card" href="https://www.instagram.com/vinius3d/" target="_blank" rel="noopener">
       <div class="ic">📸</div>
       <div class="lbl">Instagram</div>
       <div class="sub">@vinius3d</div>
@@ -402,18 +400,20 @@ function setFulfil(v){
   document.getElementById('optEntrega').classList.toggle('active', v==='entrega');
 }
 function sendPecaOrcamento(){
+  const nome = document.getElementById('pecaNome').value.trim();
   const medidas = document.getElementById('pecaMedidas').value.trim();
   const qtd = document.getElementById('pecaQtd').value || '1';
   const cor = document.getElementById('pecaCor').value.trim();
   const whats = document.getElementById('pecaWhats').value.trim();
   const obs = document.getElementById('pecaObs').value.trim();
 
-  if(!medidas && !cor && !obs){
-    alert('Preenche pelo menos as medidas, a cor ou uma observação pra gente entender o que você precisa.');
+  if(!nome && !medidas && !cor && !obs){
+    alert('Preenche pelo menos o nome da peça, as medidas, a cor ou uma observação pra gente entender o que você precisa.');
     return;
   }
 
   let msg = 'Olá! Gostaria de um orçamento pra uma peça personalizada (Faça sua peça):%0A%0A';
+  if(nome) msg += `Peça: ${nome}%0A`;
   msg += `Quantidade: ${qtd}%0A`;
   if(medidas) msg += `Medidas: ${medidas}%0A`;
   if(cor) msg += `Cor: ${cor}%0A`;
