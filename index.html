@@ -73,7 +73,8 @@
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px;}
   .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;transition:border-color .15s, box-shadow .15s;}
   .card:hover{border-color:var(--accent);box-shadow:0 4px 16px rgba(0,0,0,0.05);}
-  .card-img{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:42px;background:var(--bg-alt);}
+  .card-img{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:42px;background:var(--bg-alt);overflow:hidden;}
+  .card-img img{width:100%;height:100%;object-fit:cover;}
   .card-body{padding:14px;display:flex;flex-direction:column;gap:6px;flex:1;}
   .card-body h3{font-size:15px;color:#111;}
   .card-body .desc{font-size:13px;color:var(--text-dim);margin:0;flex:1;}
@@ -277,23 +278,45 @@
   </div>
 </aside>
 
-<div class="mock-tag">Mockup de layout — sem backend real</div>
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyB02Aw15fpyDYpWX1F8ravJXrrlyRt_I9U",
+    authDomain: "vinius3d-site.firebaseapp.com",
+    projectId: "vinius3d-site",
+    storageBucket: "vinius3d-site.firebasestorage.app",
+    messagingSenderId: "444175675502",
+    appId: "1:444175675502:web:db7357518c52e48eb6767f",
+    measurementId: "G-XN3S7FJNSL"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+</script>
 
 <script>
-const products = [
-  {id:1, cat:'chaveiros', name:'Chaveiro Geométrico', desc:'Formas geométricas em cores variadas.', price:8, icon:'🔑'},
-  {id:2, cat:'chaveiros', name:'Chaveiro com Nome', desc:'Personalizado com o nome que quiser.', price:12, icon:'🔑'},
-  {id:3, cat:'brinquedos', name:'Dinossauro Articulado', desc:'Brinquedo com juntas móveis, sem montagem.', price:25, icon:'🧸'},
-  {id:4, cat:'brinquedos', name:'Pião Colorido', desc:'Pião equilibrado, gira por mais tempo.', price:10, icon:'🧸'},
-  {id:5, cat:'personalizados', name:'Porta-retrato 3D', desc:'Moldura personalizável com nome ou data.', price:35, icon:'🎁'},
-  {id:6, cat:'personalizados', name:'Topo de Bolo', desc:'Nome ou tema personalizado para festas.', price:18, icon:'🎁'},
-  {id:7, cat:'miniaturas', name:'Miniatura RPG', desc:'Personagem detalhado para mesa de jogo.', price:15, icon:'🗿'},
-  {id:8, cat:'miniaturas', name:'Busto Personalizado', desc:'A partir de foto de referência.', price:40, icon:'🗿'},
-  {id:9, cat:'educativos', name:'Kit Sistema Solar', desc:'Planetas em escala para uso didático.', price:45, icon:'🏫'},
-  {id:10, cat:'educativos', name:'Alfabeto Tátil', desc:'Letras em relevo para alfabetização.', price:30, icon:'🏫'},
-  {id:11, cat:'utilidades', name:'Suporte de Celular', desc:'Ajuste de ângulo, cabe em qualquer mesa.', price:20, icon:'🛠️'},
-  {id:12, cat:'utilidades', name:'Organizador de Fios', desc:'Mantém cabos presos e organizados.', price:14, icon:'🛠️'},
-];
+/* Os produtos agora vêm do Firestore (collection "site_produtos").
+   Edite tudo — nome, preço, foto, categoria — pelo painel em /admin/ (login necessário). */
+let products = [];
+
+async function loadProducts(){
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:40px 0;">Carregando produtos...</p>';
+  try{
+    const snap = await db.collection('site_produtos').orderBy('name').get();
+    products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  }catch(e){
+    console.error('Erro ao carregar produtos do Firestore:', e);
+    products = [];
+  }
+  renderTabs();
+  if(!products.length){
+    grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-dim);">Nenhum produto cadastrado ainda. Adicione produtos pelo painel de admin em <a href="/admin/">/admin/</a>.</p>';
+  }else{
+    renderGrid();
+  }
+  updateCartUI();
+}
 const categories = [
   {id:'todos', label:'Todos'},
   {id:'chaveiros', label:'🔑 Chaveiros'},
@@ -324,17 +347,17 @@ function renderGrid(){
     qtyDraft[p.id] = qtyDraft[p.id] || 1;
     return `
     <div class="card">
-      <div class="card-img">${p.icon}</div>
+      <div class="card-img">${p.img ? `<img src="${p.img}" alt="${p.name}">` : (p.icon || '📦')}</div>
       <div class="card-body">
         <h3>${p.name}</h3>
         <p class="desc">${p.desc}</p>
         <div class="card-foot"><span class="price">R$ ${p.price}</span></div>
         <div class="qty-row">
-          <button onclick="changeDraft(${p.id},-1)">−</button>
+          <button onclick="changeDraft('${p.id}',-1)">−</button>
           <span class="qn" id="qn-${p.id}">${qtyDraft[p.id]}</span>
-          <button onclick="changeDraft(${p.id},1)">+</button>
+          <button onclick="changeDraft('${p.id}',1)">+</button>
         </div>
-        <button class="add-btn" onclick="addToCart(${p.id})">Adicionar ao pedido</button>
+        <button class="add-btn" onclick="addToCart('${p.id}')">Adicionar ao pedido</button>
       </div>
     </div>`;
   }).join('');
@@ -373,9 +396,9 @@ function updateCartUI(){
         <div class="di-meta">R$ ${i.price} x ${i.qty} = R$ ${i.price*i.qty}</div>
       </div>
       <div style="display:flex;align-items:center;gap:6px;">
-        <button onclick="cartQtyChange(${i.id},-1)" style="width:22px;height:22px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--text);cursor:pointer;">−</button>
+        <button onclick="cartQtyChange('${i.id}',-1)" style="width:22px;height:22px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--text);cursor:pointer;">−</button>
         <span>${i.qty}</span>
-        <button onclick="cartQtyChange(${i.id},1)" style="width:22px;height:22px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--text);cursor:pointer;">+</button>
+        <button onclick="cartQtyChange('${i.id}',1)" style="width:22px;height:22px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--text);cursor:pointer;">+</button>
       </div>
     </div>`).join('') : '<div class="drawer-empty">Seu carrinho está vazio.<br>Adicione produtos para montar o pedido.</div>';
 }
@@ -403,9 +426,7 @@ function sendOrder(){
   window.open('https://wa.me/?text=' + msg, '_blank');
 }
 
-renderTabs();
-renderGrid();
-updateCartUI();
+loadProducts();
 </script>
 
 </body>
