@@ -70,6 +70,13 @@
   #statusMsg.ok{color:var(--accent-dark);}
   #statusMsg.err{color:var(--danger);}
   .empty-note{color:var(--text-dim);font-size:13px;text-align:center;padding:24px 0;}
+
+.colors-panel{grid-column:1/-1;border-top:1px solid var(--border);padding-top:18px}
+.color-row{display:grid;grid-template-columns:1fr 76px 100px auto;gap:10px;align-items:end;margin:12px 0}
+.color-row .field{margin:0}.color-row input[type=color]{height:42px;padding:4px}
+.colors-help{font-size:14px}.color-row label{font-size:14px}
+@media(max-width:540px){.color-row{grid-template-columns:1fr 76px}.product-row{flex-wrap:wrap}.p-actions{margin-left:auto}}
+button:focus-visible,input:focus-visible{outline:3px solid #225bb0;outline-offset:2px}
 </style>
 </head>
 <body>
@@ -98,27 +105,6 @@
   </header>
   <main>
     <div class="card">
-      <h2 id="catFormTitle">Categorias</h2>
-      <p style="margin-top:-6px;">Aparecem no filtro de produtos e na faixa "O que tem aqui" do site.</p>
-      <div class="form-grid">
-        <div class="field">
-          <label>Nome</label>
-          <input type="text" id="cName" placeholder="ex: Chaveiros">
-        </div>
-        <div class="field">
-          <label>Emoji</label>
-          <input type="text" id="cIcon" placeholder="ex: 🔑" maxlength="4">
-        </div>
-      </div>
-      <div id="catStatusMsg" style="font-size:13px;margin-top:4px;min-height:18px;"></div>
-      <div class="form-actions">
-        <button class="btn btn-primary" id="catSaveBtn" onclick="saveCategory()">Adicionar categoria</button>
-        <button class="btn btn-ghost" id="catCancelBtn" onclick="resetCatForm()" style="display:none;">Cancelar edição</button>
-      </div>
-      <div id="categoryList" style="margin-top:16px;"></div>
-    </div>
-
-    <div class="card">
       <h2 id="formTitle">Novo produto</h2>
       <div class="form-grid">
         <div class="field full">
@@ -127,7 +113,15 @@
         </div>
         <div class="field">
           <label>Categoria</label>
-          <select id="fCat"><option value="">Cadastre uma categoria primeiro</option></select>
+          <select id="fCat">
+            <option value="filamentos">🧵 Filamentos</option>
+            <option value="chaveiros">🔑 Chaveiros</option>
+            <option value="brinquedos">🧸 Brinquedos</option>
+            <option value="personalizados">🎁 Personalizados</option>
+            <option value="miniaturas">🗿 Miniaturas</option>
+            <option value="educativos">🏫 Educativos</option>
+            <option value="utilidades">🛠️ Peças e utilidades</option>
+          </select>
         </div>
         <div class="field">
           <label>Preço (R$)</label>
@@ -146,7 +140,13 @@
           <input type="file" id="fPhoto" accept="image/*">
         </div>
       </div>
-      <div id="statusMsg"></div>
+      <section class="colors-panel" aria-labelledby="colorsTitle">
+        <h3 id="colorsTitle">Cores e estoque</h3>
+        <p class="colors-help">Para filamentos, cadastre cada cor e a quantidade de rolos disponíveis. Com estoque zero, a cor aparece como “Fora de estoque” e o cliente pode solicitar um aviso pelo WhatsApp.</p>
+        <div id="colorRows"></div>
+        <button type="button" class="btn btn-ghost" onclick="addColorRow()">+ Adicionar cor</button>
+      </section>
+      <div id="statusMsg" role="status"></div>
       <div class="form-actions">
         <button class="btn btn-primary" id="saveBtn" onclick="saveProduct()">Adicionar produto</button>
         <button class="btn btn-ghost" id="cancelBtn" onclick="resetForm()" style="display:none;">Cancelar edição</button>
@@ -181,15 +181,6 @@ const storage = firebase.storage();
 
 let editingId = null;
 let unsubscribe = null;
-let catUnsubscribe = null;
-let editingCatId = null;
-let categories = [];
-
-function slugify(str){
-  const diacritics = new RegExp('[̀-ͯ]', 'g');
-  const noAccents = str.toString().normalize('NFD').replace(diacritics, '');
-  return noAccents.toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
-}
 
 // ---- login/logout ----
 function doLogin(){
@@ -208,122 +199,13 @@ auth.onAuthStateChanged(user => {
   if(user){
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('panel').style.display = 'block';
-    catStartListening();
     startListening();
   }else{
     document.getElementById('loginScreen').style.display = 'flex';
     document.getElementById('panel').style.display = 'none';
     if(unsubscribe) unsubscribe();
-    if(catUnsubscribe) catUnsubscribe();
   }
 });
-
-// ---- categorias em tempo real ----
-function catStartListening(){
-  if(catUnsubscribe) catUnsubscribe();
-  catUnsubscribe = db.collection('site_categorias').orderBy('ordem').onSnapshot(snap => {
-    categories = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderCategoryList();
-    renderCatSelect();
-  }, e => {
-    console.error('Erro ao ouvir categorias:', e);
-    document.getElementById('categoryList').innerHTML = '<p class="empty-note">Erro ao carregar categorias. Confere as regras de segurança do Firestore.</p>';
-  });
-}
-
-function renderCategoryList(){
-  const list = document.getElementById('categoryList');
-  if(!categories.length){
-    list.innerHTML = '<p class="empty-note">Nenhuma categoria ainda. Cadastre a primeira acima.</p>';
-    return;
-  }
-  list.innerHTML = categories.map(c => `
-    <div class="product-row">
-      <div class="thumb"><span>${c.icon || '🏷️'}</span></div>
-      <div class="p-info">
-        <div class="p-name">${c.name || c.id}</div>
-      </div>
-      <div class="p-actions">
-        <button class="btn btn-ghost" onclick='editCategory(${JSON.stringify(c.id)})'>Editar</button>
-        <button class="btn btn-danger" onclick='deleteCategory(${JSON.stringify(c.id)})'>Excluir</button>
-      </div>
-    </div>`).join('');
-}
-
-function renderCatSelect(){
-  const sel = document.getElementById('fCat');
-  const current = sel.value;
-  if(!categories.length){
-    sel.innerHTML = '<option value="">Cadastre uma categoria primeiro</option>';
-    return;
-  }
-  sel.innerHTML = categories.map(c => `<option value="${c.id}">${c.icon ? c.icon+' ' : ''}${c.name}</option>`).join('');
-  if(categories.some(c => c.id === current)) sel.value = current;
-}
-
-async function saveCategory(){
-  const name = document.getElementById('cName').value.trim();
-  const icon = document.getElementById('cIcon').value.trim();
-  const status = document.getElementById('catStatusMsg');
-  const btn = document.getElementById('catSaveBtn');
-  if(!name){
-    status.style.color = 'var(--danger)';
-    status.textContent = 'Digita um nome pra categoria.';
-    return;
-  }
-  btn.disabled = true;
-  status.style.color = '';
-  status.textContent = 'Salvando...';
-  try{
-    if(editingCatId){
-      await db.collection('site_categorias').doc(editingCatId).update({ name, icon: icon || null });
-      status.style.color = 'var(--accent-dark)';
-      status.textContent = 'Categoria atualizada!';
-    }else{
-      const id = slugify(name) || ('cat-' + Date.now());
-      await db.collection('site_categorias').doc(id).set({ name, icon: icon || null, ordem: categories.length });
-      status.style.color = 'var(--accent-dark)';
-      status.textContent = 'Categoria adicionada!';
-    }
-    resetCatForm();
-  }catch(e){
-    console.error(e);
-    status.style.color = 'var(--danger)';
-    status.textContent = 'Deu erro ao salvar a categoria. Confere as regras de segurança.';
-  }finally{
-    btn.disabled = false;
-  }
-}
-
-function editCategory(id){
-  const c = categories.find(x => x.id === id);
-  if(!c) return;
-  editingCatId = id;
-  document.getElementById('cName').value = c.name || '';
-  document.getElementById('cIcon').value = c.icon || '';
-  document.getElementById('catSaveBtn').textContent = 'Salvar categoria';
-  document.getElementById('catCancelBtn').style.display = 'inline-block';
-  document.getElementById('catStatusMsg').textContent = '';
-  window.scrollTo({top:0, behavior:'smooth'});
-}
-
-async function deleteCategory(id){
-  if(!confirm('Excluir essa categoria? Produtos que já estão nela não são apagados, só deixam de aparecer nos filtros até você trocar a categoria deles.')) return;
-  try{
-    await db.collection('site_categorias').doc(id).delete();
-  }catch(e){
-    console.error(e);
-    alert('Erro ao excluir. Tenta de novo.');
-  }
-}
-
-function resetCatForm(){
-  editingCatId = null;
-  document.getElementById('cName').value = '';
-  document.getElementById('cIcon').value = '';
-  document.getElementById('catSaveBtn').textContent = 'Adicionar categoria';
-  document.getElementById('catCancelBtn').style.display = 'none';
-}
 
 // ---- lista em tempo real ----
 function startListening(){
@@ -343,6 +225,7 @@ function startListening(){
         <div class="p-info">
           <div class="p-name">${p.name || '(sem nome)'}</div>
           <div class="p-meta">${categoryLabel(p.cat)} · R$ ${Number(p.price||0).toFixed(2)}</div>
+          <div class="p-meta">${stockSummary(p)}</div>
         </div>
         <div class="p-actions">
           <button class="btn btn-ghost" onclick='editProduct(${JSON.stringify(d.id)})'>Editar</button>
@@ -356,9 +239,43 @@ function startListening(){
   });
 }
 function categoryLabel(cat){
-  const c = categories.find(x => x.id === cat);
-  if(c) return (c.icon ? c.icon + ' ' : '') + c.name;
-  return cat || '—';
+  const map = {filamentos:'🧵 Filamentos', chaveiros:'🔑 Chaveiros', brinquedos:'🧸 Brinquedos', personalizados:'🎁 Personalizados', miniaturas:'🗿 Miniaturas', educativos:'🏫 Educativos', utilidades:'🛠️ Utilidades'};
+  return map[cat] || cat || '—';
+}
+
+function escapeText(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function stockSummary(p){
+  const colors=Array.isArray(p.cores)?p.cores:[];
+  if(!colors.length)return '';
+  return colors.map(c=>`${escapeText(c.nome||c.name)}: ${Number(c.estoque)>0?Number(c.estoque)+' disponível(is)':'fora de estoque'}`).join(' · ');
+}
+function addColorRow(color={}){
+  const row=document.createElement('div');row.className='color-row';
+  row.dataset.colorId=String(color.id??crypto.randomUUID());
+  const uid=crypto.randomUUID();
+  row.innerHTML=`<div class="field"><label for="name-${uid}">Nome da cor</label><input id="name-${uid}" data-color-name maxlength="60" placeholder="Ex.: Preto" value="${escapeText(color.nome||color.name||'')}"></div>
+  <div class="field"><label for="hex-${uid}">Tom</label><input id="hex-${uid}" data-color-hex type="color" value="${/^#[0-9a-f]{6}$/i.test(color.hex||'')?color.hex:'#161616'}"></div>
+  <div class="field"><label for="stock-${uid}">Estoque</label><input id="stock-${uid}" data-color-stock type="number" min="0" step="1" value="${Number.isInteger(color.estoque)&&color.estoque>=0?color.estoque:0}"></div>
+  <button type="button" class="btn btn-danger">Remover cor</button>`;
+  row.querySelector('button').addEventListener('click',()=>row.remove());
+  document.getElementById('colorRows').append(row);
+}
+function collectColors(){
+  const names=new Set(),ids=new Set();
+  return [...document.querySelectorAll('#colorRows .color-row')].map(row=>{
+    const nome=row.querySelector('[data-color-name]').value.trim();
+    const raw=row.querySelector('[data-color-stock]').value;
+    const estoque=Number(raw),hex=row.querySelector('[data-color-hex]').value;
+    if(!nome)throw new Error('Preencha o nome de todas as cores ou remova as linhas vazias.');
+    const key=nome.normalize('NFKC').toLocaleLowerCase('pt-BR');
+    if(names.has(key))throw new Error('Cada cor deve ter um nome diferente.');
+    if(raw.trim()===''||!Number.isSafeInteger(estoque)||estoque<0)throw new Error('O estoque deve ser um número inteiro igual ou maior que zero.');
+    if(!/^#[0-9a-f]{6}$/i.test(hex))throw new Error('Selecione um tom válido para cada cor.');
+    names.add(key);
+    let id=row.dataset.colorId;
+    if(!id||ids.has(id))id=crypto.randomUUID();
+    ids.add(id);return {id,nome,hex,estoque};
+  });
 }
 
 // ---- salvar (novo ou edição) ----
@@ -372,18 +289,23 @@ async function saveProduct(){
   const status = document.getElementById('statusMsg');
   const saveBtn = document.getElementById('saveBtn');
 
-  if(!name || !cat || isNaN(price)){
+  if(!name || !cat || !Number.isFinite(price) || price < 0){
     status.className = 'err';
     status.textContent = 'Preenche pelo menos nome, categoria e preço.';
     return;
   }
 
+  let cores;
+  try{
+    cores = collectColors();
+    if((cat==='filamentos'||/filamento/i.test(name))&&!cores.length) throw new Error('Cadastre pelo menos uma cor para este filamento.');
+  }catch(e){status.className='err';status.textContent=e.message;return;}
   saveBtn.disabled = true;
   status.className = '';
   status.textContent = 'Salvando...';
 
   try{
-    const data = { name, cat, price, desc, icon: icon || null };
+    const data = { name, cat, price, desc, icon: icon || null, cores };
 
     if(file){
       status.textContent = 'Enviando foto...';
@@ -419,9 +341,13 @@ async function editProduct(id){
   if(!doc.exists) return;
   const p = doc.data();
   editingId = id;
+  document.getElementById('colorRows').replaceChildren();
+  (Array.isArray(p.cores)?p.cores:[]).forEach(addColorRow);
   document.getElementById('formTitle').textContent = 'Editar produto';
   document.getElementById('fName').value = p.name || '';
-  document.getElementById('fCat').value = p.cat || '';
+  const categorySelect=document.getElementById('fCat');
+  if(p.cat&&![...categorySelect.options].some(o=>o.value===p.cat))categorySelect.add(new Option(p.cat,p.cat));
+  categorySelect.value = p.cat || 'chaveiros';
   document.getElementById('fPrice').value = p.price ?? '';
   document.getElementById('fDesc').value = p.desc || '';
   document.getElementById('fIcon').value = p.icon || '';
@@ -443,10 +369,11 @@ async function deleteProduct(id){
 }
 
 function resetForm(){
+  document.getElementById('colorRows').replaceChildren();
   editingId = null;
   document.getElementById('formTitle').textContent = 'Novo produto';
   document.getElementById('fName').value = '';
-  renderCatSelect();
+  document.getElementById('fCat').value = 'chaveiros';
   document.getElementById('fPrice').value = '';
   document.getElementById('fDesc').value = '';
   document.getElementById('fIcon').value = '';
