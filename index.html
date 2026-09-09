@@ -140,6 +140,22 @@
   .send-btn{width:100%;background:#25D366;color:#06210f;border:none;border-radius:10px;padding:12px;font-weight:800;font-size:14px;cursor:pointer;}
 
   .mock-tag{position:fixed;bottom:14px;left:14px;background:#fff;border:1px solid var(--border);color:var(--text-dim);font-size:11px;padding:6px 10px;border-radius:8px;z-index:80;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+
+  .color-field{border:0;padding:0;margin:14px 0 0;min-width:0;}
+  .color-field legend{font-size:14px;font-weight:700;margin-bottom:8px;}
+  .color-options{display:flex;flex-wrap:wrap;gap:8px;}
+  .color-option{display:inline-flex;align-items:center;gap:7px;padding:9px 10px;border:1px solid var(--border);border-radius:9px;background:#fff;color:var(--text);font:inherit;font-size:14px;cursor:pointer;text-align:left;}
+  .color-option[aria-pressed="true"]{border:2px solid var(--accent-dark);padding:8px 9px;background:var(--accent-soft);}
+  .color-option.sold-out{border-style:dashed;}
+  .color-option small{display:block;font-size:12px;color:#6b6f6c;}
+  .swatch{width:18px;height:18px;border:1px solid #888;border-radius:50%;flex-shrink:0;}
+  .stock-note{font-size:14px;margin:10px 0 0;color:var(--accent-dark);}
+  .stock-note.unavailable{color:#825014;}
+  .add-btn:disabled{opacity:.55;cursor:not-allowed;}
+  .notify-btn{display:block;text-align:center;text-decoration:none;width:100%;margin-top:10px;border:1px solid var(--text);border-radius:9px;padding:10px;background:#fff;color:var(--text);font-size:14px;font-weight:700;}
+  .notify-help{font-size:12px;margin:6px 0 0;}
+  button:focus-visible,a:focus-visible{outline:3px solid #225bb0;outline-offset:3px;}
+
 </style>
 </head>
 <body>
@@ -219,7 +235,7 @@
       <div class="lbl">WhatsApp</div>
       <div class="sub">Fale direto conosco</div>
     </a>
-    <a class="contact-card" href="https://www.instagram.com/vinius3d/" target="_blank" rel="noopener">
+    <a class="contact-card" href="#">
       <div class="ic">📸</div>
       <div class="lbl">Instagram</div>
       <div class="sub">@vinius3d</div>
@@ -298,6 +314,9 @@ async function init(){
   const grid = document.getElementById('grid');
   grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:40px 0;">Carregando produtos...</p>';
   await Promise.all([loadCategories(), loadProducts()]);
+  if(products.some(p=>p.cat==='filamentos')&&!categories.some(c=>c.id==='filamentos')){
+    categories.push({id:'filamentos',name:'Filamentos',icon:'🧵'});
+  }
   renderTabs();
   renderOfferBanner();
   if(!products.length){
@@ -332,68 +351,82 @@ function renderTabs(){
 }
 function setCat(id){ activeCat = id; renderTabs(); renderGrid(); }
 
-function renderGrid(){
-  const grid = document.getElementById('grid');
-  const list = activeCat==='todos' ? products : products.filter(p=>p.cat===activeCat);
-  grid.innerHTML = list.map(p => {
-    qtyDraft[p.id] = qtyDraft[p.id] || 1;
-    return `
-    <div class="card">
-      <div class="card-img">${p.img ? `<img src="${p.img}" alt="${p.name}">` : (p.icon || '📦')}</div>
-      <div class="card-body">
-        <h3>${p.name}</h3>
-        <p class="desc">${p.desc}</p>
-        <div class="card-foot"><span class="price">R$ ${p.price}</span></div>
-        <div class="qty-row">
-          <button onclick="changeDraft('${p.id}',-1)">−</button>
-          <span class="qn" id="qn-${p.id}">${qtyDraft[p.id]}</span>
-          <button onclick="changeDraft('${p.id}',1)">+</button>
-        </div>
-        <button class="add-btn" onclick="addToCart('${p.id}')">Adicionar ao pedido</button>
-      </div>
-    </div>`;
-  }).join('');
+/* Cores por produto no Firestore:
+   cores: [{id: 'preto', nome: 'Preto', hex: '#161616', estoque: 5}]
+   estoque é a quantidade disponível; zero significa fora de estoque.
+   O aviso abre uma solicitação no WhatsApp, para atendimento manual da loja. */
+const selectedColors = Object.create(null);
+function esc(value){return String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function arg(value){return esc(JSON.stringify(String(value)));}
+function money(value){return Number(value).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
+function colorsOf(p){
+  return (Array.isArray(p.cores) ? p.cores : []).map((c,index)=>({
+    id:String(c.id ?? index), name:String(c.nome || c.name || 'Cor sem nome'),
+    hex:/^#[0-9a-f]{6}$/i.test(c.hex || '') ? c.hex : '#dddddd',
+    stock:typeof c.estoque==='number' && Number.isFinite(c.estoque) ? Math.max(0,Math.floor(c.estoque)) : 0
+  }));
 }
-function changeDraft(id, delta){
-  qtyDraft[id] = Math.max(1, (qtyDraft[id]||1) + delta);
-  document.getElementById('qn-'+id).textContent = qtyDraft[id];
+function isFilament(p){return /filamento/i.test([p.name,p.cat,categories.find(c=>c.id===p.cat)?.name].join(' '));}
+function colorFor(p){return colorsOf(p).find(c=>c.id===selectedColors[p.id]);}
+function itemKey(id,colorId){return JSON.stringify([id,colorId ?? null]);}
+function notifyUrl(p,c){return 'https://wa.me/5598991019019?text='+encodeURIComponent(`Olá! Quero que me avisem quando chegar: ${p.name} — Cor: ${c.name}.`);}
+function selectColor(id,colorId){
+  selectedColors[id]=colorId;qtyDraft[id]=1;renderGrid();
+  const card=[...document.querySelectorAll('[data-product]')].find(el=>el.dataset.product===id);
+  card?.querySelector('[aria-pressed="true"]')?.focus();
+}
+function renderGrid(){
+  const grid=document.getElementById('grid');
+  const list=activeCat==='todos'?products:products.filter(p=>p.cat===activeCat);
+  grid.innerHTML=list.map(p=>{
+    qtyDraft[p.id]=qtyDraft[p.id]||1;
+    const colors=colorsOf(p), color=colorFor(p), needsColor=colors.length>0;
+    const unconfigured=isFilament(p)&&!needsColor;
+    const unavailable=color&&color.stock===0;
+    const canAdd=!unconfigured&&(!needsColor||color&&color.stock>0);
+    return `<div class="card" data-product="${esc(p.id)}">
+      <div class="card-img">${p.img?`<img src="${esc(p.img)}" alt="${esc(p.name)}" loading="lazy">`:esc(p.icon||'📦')}</div>
+      <div class="card-body"><h3>${esc(p.name)}</h3><p class="desc">${esc(p.desc)}</p>
+      <div class="card-foot"><span class="price">${money(p.price)}</span></div>
+      ${needsColor?`<fieldset class="color-field"><legend>Escolha a cor</legend><div class="color-options">${colors.map(c=>`<button type="button" class="color-option ${c.stock===0?'sold-out':''}" aria-pressed="${color?.id===c.id}" onclick="selectColor(${arg(p.id)},${arg(c.id)})"><span class="swatch" style="background:${c.hex}" aria-hidden="true"></span><span>${esc(c.name)}<small>${c.stock>0?'Disponível':'Fora de estoque'}</small></span></button>`).join('')}</div></fieldset>
+      <p class="stock-note ${unavailable?'unavailable':''}" role="status">${color?`${esc(color.name)} · ${unavailable?'Fora de estoque':color.stock+' disponível(is)'}`:'Selecione uma cor para continuar.'}</p>`:''}
+      ${unconfigured?'<p class="stock-note unavailable">Cores em atualização. Consulte a disponibilidade pelo WhatsApp.</p>':''}
+      ${unavailable?`<a class="notify-btn" href="${esc(notifyUrl(p,color))}" target="_blank" rel="noopener">Me avise quando chegar</a><p class="notify-help">Solicite o aviso pelo WhatsApp. Envie a mensagem para a loja acompanhar seu interesse.</p>`:
+      unconfigured?`<a class="notify-btn" href="https://wa.me/5598991019019?text=${encodeURIComponent('Olá! Quais cores estão disponíveis para '+p.name+'?')}" target="_blank" rel="noopener">Consultar cores pelo WhatsApp</a>`:
+      `<div class="qty-row"><button aria-label="Diminuir quantidade de ${esc(p.name)}" onclick="changeDraft(${arg(p.id)},-1)" ${!canAdd?'disabled':''}>−</button><span class="qn" id="qn-${esc(p.id)}">${qtyDraft[p.id]}</span><button aria-label="Aumentar quantidade de ${esc(p.name)}" onclick="changeDraft(${arg(p.id)},1)" ${!canAdd?'disabled':''}>+</button></div><button class="add-btn" onclick="addToCart(${arg(p.id)})" ${!canAdd?'disabled':''}>${canAdd?'Adicionar ao pedido':'Selecione uma cor'}</button>`}
+      </div></div>`;
+  }).join('')||'<p>Nenhum produto nesta categoria.</p>';
+}
+function changeDraft(id,delta){
+  const p=products.find(p=>p.id===id);if(!p)return;
+  const c=colorFor(p),used=cart[itemKey(id,c?.id)]?.qty||0;
+  const limit=c?Math.max(1,c.stock-used):Infinity;
+  qtyDraft[id]=Math.min(limit,Math.max(1,(qtyDraft[id]||1)+delta));
+  document.getElementById('qn-'+id).textContent=qtyDraft[id];
 }
 function addToCart(id){
-  const p = products.find(x=>x.id===id);
-  const q = qtyDraft[id] || 1;
-  cart[id] = cart[id] ? {...cart[id], qty: cart[id].qty + q} : {...p, qty:q};
-  qtyDraft[id] = 1;
-  document.getElementById('qn-'+id).textContent = 1;
-  updateCartUI();
-  openCart();
+  const p=products.find(p=>p.id===id);if(!p)return;
+  const colors=colorsOf(p),c=colorFor(p);
+  if((isFilament(p)&&!colors.length)||(colors.length&&(!c||!c.stock)))return;
+  const key=itemKey(id,c?.id),q=qtyDraft[id]||1;
+  if(c&&(cart[key]?.qty||0)+q>c.stock){alert('A quantidade escolhida excede o estoque desta cor.');return;}
+  cart[key]=cart[key]?{...cart[key],qty:cart[key].qty+q}:{...p,key,colorId:c?.id,colorName:c?.name,qty:q};
+  qtyDraft[id]=1;renderGrid();updateCartUI();openCart();
 }
-function removeFromCart(id){ delete cart[id]; updateCartUI(); }
-function cartQtyChange(id, delta){
-  if(!cart[id]) return;
-  cart[id].qty += delta;
-  if(cart[id].qty <= 0) delete cart[id];
-  updateCartUI();
+function removeFromCart(key){delete cart[key];updateCartUI();}
+function cartQtyChange(key,delta){
+  const item=cart[key];if(!item)return;
+  const p=products.find(p=>p.id===item.id),c=p&&colorsOf(p).find(c=>c.id===item.colorId);
+  if(delta>0&&item.colorId!==undefined&&(!c||item.qty+delta>c.stock)){alert('Não há mais unidades disponíveis nesta cor.');return;}
+  item.qty+=delta;if(item.qty<=0)delete cart[key];updateCartUI();
 }
 function updateCartUI(){
-  const items = Object.values(cart);
-  const count = items.reduce((s,i)=>s+i.qty,0);
-  const total = items.reduce((s,i)=>s+i.qty*i.price,0);
-  document.getElementById('cartCount').textContent = count;
-  document.getElementById('cartTotal').textContent = 'R$ ' + total;
-  const body = document.getElementById('drawerBody');
-  body.innerHTML = items.length ? items.map(i => `
-    <div class="drawer-item">
-      <div>
-        <div class="di-name">${i.name}</div>
-        <div class="di-meta">R$ ${i.price} x ${i.qty} = R$ ${i.price*i.qty}</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;">
-        <button onclick="cartQtyChange('${i.id}',-1)" style="width:22px;height:22px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--text);cursor:pointer;">−</button>
-        <span>${i.qty}</span>
-        <button onclick="cartQtyChange('${i.id}',1)" style="width:22px;height:22px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--text);cursor:pointer;">+</button>
-      </div>
-    </div>`).join('') : '<div class="drawer-empty">Seu carrinho está vazio.<br>Adicione produtos para montar o pedido.</div>';
+  const items=Object.values(cart),total=items.reduce((s,i)=>s+i.qty*i.price,0);
+  document.getElementById('cartCount').textContent=items.reduce((s,i)=>s+i.qty,0);
+  document.getElementById('cartTotal').textContent=money(total);
+  document.getElementById('drawerBody').innerHTML=items.length?items.map(i=>`<div class="drawer-item"><div><div class="di-name">${esc(i.name)}</div>${i.colorName?`<div class="di-meta">Cor: ${esc(i.colorName)}</div>`:''}<div class="di-meta">${money(i.price)} × ${i.qty} = ${money(i.price*i.qty)}</div></div><div style="display:flex;align-items:center;gap:6px"><button aria-label="Diminuir ${esc(i.name)} ${esc(i.colorName||'')}" onclick="cartQtyChange(${arg(i.key)},-1)">−</button><span>${i.qty}</span><button aria-label="Aumentar ${esc(i.name)} ${esc(i.colorName||'')}" onclick="cartQtyChange(${arg(i.key)},1)">+</button></div></div>`).join(''):'<div class="drawer-empty">Seu carrinho está vazio.<br>Adicione produtos para montar o pedido.</div>';
 }
+
 function setFulfil(v){
   fulfil = v;
   document.getElementById('optRetirar').classList.toggle('active', v==='retirar');
@@ -436,7 +469,7 @@ function sendOrder(){
   const obs = document.getElementById('custObs').value;
   const total = items.reduce((s,i)=>s+i.qty*i.price,0);
   let msg = 'Olá! Gostaria de fazer um pedido:%0A%0A';
-  items.forEach(i => msg += `${i.qty}x ${i.name} — R$ ${i.price*i.qty}%0A`);
+  items.forEach(i => msg += encodeURIComponent(`${i.qty}x ${i.name}${i.colorName ? " — Cor: " + i.colorName : ""} — ${money(i.price*i.qty)}`) + "%0A");
   msg += `%0ATotal: R$ ${total}%0A`;
   msg += fulfil==='retirar' ? 'Retirada%0A' : 'Entrega%0A';
   msg += `${name} — ${whats}`;
