@@ -2,6 +2,14 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<!-- Google Ads: medição de início de finalização pelo WhatsApp -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18399189932"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'AW-18399189932');
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vinius 3D — Peças impressas sob medida</title>
 <style>
@@ -475,6 +483,19 @@ function sendOrder(){
   msg += `${name} — ${whats}`;
   if(obs) msg += `%0AObs: ${obs}`;
   window.open('https://wa.me/5598991019019?text=' + msg, '_blank');
+  // Mede o início da finalização, sem enviar dados pessoais ou a mensagem ao Google.
+  // O WhatsApp abre diretamente no clique, mesmo se a tag estiver bloqueada.
+  try {
+    if (typeof gtag === 'function') {
+      gtag('event', 'conversion', {
+        'send_to': 'AW-18399189932/tXubCOGTgPQcEKy3tcVE',
+        'value': 1.0,
+        'currency': 'BRL'
+      });
+    }
+  } catch (error) {
+    // Uma falha na medição não interrompe o pedido.
+  }
 }
 
 init();
