@@ -78,6 +78,7 @@
 @media(max-width:540px){.color-row{grid-template-columns:1fr 76px}.product-row{flex-wrap:wrap}.p-actions{margin-left:auto}}
 button:focus-visible,input:focus-visible{outline:3px solid #225bb0;outline-offset:2px}
 </style>
+<script src="../kits-core.js"></script>
 </head>
 <body>
 
@@ -318,9 +319,12 @@ async function saveProduct(){
 
   if(precoPromocional!==null && (!Number.isFinite(precoPromocional)||precoPromocional<=0||precoPromocional>=price)){status.className='err';status.textContent='O preço promocional deve ser maior que zero e menor que o preço normal.';return;}
 
+  let kit;
+  try{kit=coletarKit();}catch(e){status.className='err';status.textContent=e.message;return;}
   let cores;
   try{
     cores = collectColors();
+    if(kit.opcoes.length&&cores.length)throw Error('Anúncios com opções não podem ter seleção de cores. Remova as cores para continuar.');
     if((cat==='filamentos'||/filamento/i.test(name))&&!cores.length) throw new Error('Cadastre pelo menos uma cor para este filamento.');
   }catch(e){status.className='err';status.textContent=e.message;return;}
   saveBtn.disabled = true;
@@ -328,7 +332,8 @@ async function saveProduct(){
   status.textContent = 'Salvando...';
 
   try{
-    const data = { name, cat, price, precoPromocional, desc, icon: icon || null, cores, publico: document.getElementById('fPublico').value };
+    await enviarFotosKit(kit);
+    const data = { ...kit, name, cat, price, precoPromocional, desc, icon: icon || null, cores, publico: document.getElementById('fPublico').value };
 
     if(file){
       status.textContent = 'Enviando foto...';
@@ -363,6 +368,7 @@ async function editProduct(id){
   const doc = await db.collection('site_produtos').doc(id).get();
   if(!doc.exists) return;
   const p = doc.data();
+  carregarKit(p);
   editingId = id;
   document.getElementById('fPublico').value=p.publico||'';
   document.getElementById('colorRows').replaceChildren();
@@ -394,6 +400,7 @@ async function deleteProduct(id){
 }
 
 function resetForm(){
+  carregarKit();
   document.getElementById('colorRows').replaceChildren();
   editingId = null;
   document.getElementById('fPublico').value='';
@@ -409,5 +416,6 @@ function resetForm(){
   document.getElementById('cancelBtn').style.display = 'none';
 }
 </script>
+<script src="kits-admin.js"></script>
 </body>
 </html>
