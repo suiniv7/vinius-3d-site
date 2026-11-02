@@ -302,6 +302,7 @@ const PUBLICO_ATUAL = 'clientes';
 function publicoProduto(p,categorias=[]) {
  if(p.publico==='makers'||p.publico==='clientes')return p.publico;
  if(['chaveiros','brinquedos','personalizados','miniaturas','educativos','utilidades'].includes(p.cat))return 'clientes';
+ if(['chaveiros','brinquedos','personalizados','miniaturas','educativos','utilidades'].includes(p.cat))return 'clientes';
  const texto=[p.cat,p.name,categorias.find(c=>c.id===p.cat)?.name].join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
  return /filament|impressora|bambu|snapmaker|flashforge|\bpla\b|\bpetg\b|\babs\b|neodimio|\bimas?\b|acessorios|insumos|bico|hotend/.test(texto)?'makers':'clientes';
 }
@@ -379,6 +380,9 @@ function setCat(id){ activeCat = id; renderTabs(); renderGrid(); }
 const selectedColors = Object.create(null);
 function esc(value){return String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function arg(value){return esc(JSON.stringify(String(value)));}
+function temPromocao(p){return typeof p.precoPromocional==='number'&&Number.isFinite(p.precoPromocional)&&p.precoPromocional>0&&p.precoPromocional<Number(p.price);}
+function precoVenda(p){return temPromocao(p)?p.precoPromocional:Number(p.price);}
+
 function money(value){return Number(value).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
 function colorsOf(p){
   return (Array.isArray(p.cores) ? p.cores : []).map((c,index)=>({
@@ -408,7 +412,7 @@ function renderGrid(){
     return `<div class="card" data-product="${esc(p.id)}">
       <div class="card-img">${p.img?`<img src="${esc(p.img)}" alt="${esc(p.name)}" loading="lazy">`:esc(p.icon||'📦')}</div>
       <div class="card-body"><h3>${esc(p.name)}</h3><p class="desc">${esc(p.desc)}</p>
-      <div class="card-foot"><span class="price">${money(p.price)}</span></div>
+      <div class="card-foot"><div>${temPromocao(p)?`<span style="display:block;font-size:12px;font-weight:700;color:#9c321a">Em promoção</span><del style="color:#6b6f6c;font-size:13px">${money(p.price)}</del> `:''}<span class="price">${money(precoVenda(p))}</span></div></div>
       ${needsColor?`<fieldset class="color-field"><legend>Escolha a cor</legend><div class="color-options">${colors.map(c=>`<button type="button" class="color-option ${c.stock===0?'sold-out':''}" aria-pressed="${color?.id===c.id}" onclick="selectColor(${arg(p.id)},${arg(c.id)})"><span class="swatch" style="background:${c.hex}" aria-hidden="true"></span><span>${esc(c.name)}<small>${c.stock>0?'Disponível':'Fora de estoque'}</small></span></button>`).join('')}</div></fieldset>
       <p class="stock-note ${unavailable?'unavailable':''}" role="status">${color?`${esc(color.name)} · ${unavailable?'Fora de estoque':color.stock+' disponível(is)'}`:'Selecione uma cor para continuar.'}</p>`:''}
       ${unconfigured?'<p class="stock-note unavailable">Cores em atualização. Consulte a disponibilidade pelo WhatsApp.</p>':''}
@@ -431,7 +435,7 @@ function addToCart(id){
   if((isFilament(p)&&!colors.length)||(colors.length&&(!c||!c.stock)))return;
   const key=itemKey(id,c?.id),q=qtyDraft[id]||1;
   if(c&&(cart[key]?.qty||0)+q>c.stock){alert('A quantidade escolhida excede o estoque desta cor.');return;}
-  cart[key]=cart[key]?{...cart[key],qty:cart[key].qty+q}:{...p,key,colorId:c?.id,colorName:c?.name,qty:q};
+  cart[key]=cart[key]?{...cart[key],qty:cart[key].qty+q}:{...p,price:precoVenda(p),key,colorId:c?.id,colorName:c?.name,qty:q};
   qtyDraft[id]=1;renderGrid();updateCartUI();openCart();
 }
 function removeFromCart(key){delete cart[key];updateCartUI();}

@@ -128,9 +128,10 @@ button:focus-visible,input:focus-visible{outline:3px solid #225bb0;outline-offse
           </select>
         </div>
         <div class="field">
-          <label>Preço (R$)</label>
+          <label>Preço normal (R$)</label>
           <input type="number" id="fPrice" min="0" step="0.01" placeholder="ex: 15">
         </div>
+        <div class="field full"><label for="fPromo">Preço promocional (R$) — opcional</label><input type="number" id="fPromo" min="0.01" step="0.01" placeholder="Deixe vazio para não oferecer promoção"><small>Deve ser menor que o preço normal. Apague este valor para encerrar a promoção.</small></div>
         <div class="field full">
           <label>Descrição curta</label>
           <textarea id="fDesc" rows="2" placeholder="Uma frase curta sobre o produto"></textarea>
@@ -211,6 +212,16 @@ auth.onAuthStateChanged(user => {
   }
 });
 
+function publicoProduto(p,categorias=[]) {
+ if(p.publico==='makers'||p.publico==='clientes')return p.publico;
+ if(['chaveiros','brinquedos','personalizados','miniaturas','educativos','utilidades'].includes(p.cat))return 'clientes';
+ const texto=[p.cat,p.name,categorias.find(c=>c.id===p.cat)?.name].join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+ return /filament|impressora|bambu|snapmaker|flashforge|\bpla\b|\bpetg\b|\babs\b|neodimio|\bimas?\b|acessorios|insumos|bico|hotend/.test(texto)?'makers':'clientes';
+}
+
+function temPromocao(p){return typeof p.precoPromocional==='number'&&Number.isFinite(p.precoPromocional)&&p.precoPromocional>0&&p.precoPromocional<Number(p.price);}
+function precoVenda(p){return temPromocao(p)?p.precoPromocional:Number(p.price);}
+
 // ---- lista em tempo real ----
 function startListening(){
   if(unsubscribe) unsubscribe();
@@ -220,7 +231,7 @@ function startListening(){
       list.innerHTML = '<p class="empty-note">Nenhum produto cadastrado ainda. Use o formulário acima pra adicionar o primeiro.</p>';
       return;
     }
-    list.innerHTML = snap.docs.map(d => {
+    const renderRow = d => {
       const p = d.data();
       const thumb = p.img ? `<img src="${p.img}" alt="">` : (p.icon || '📦');
       return `
@@ -228,7 +239,7 @@ function startListening(){
         <div class="thumb">${p.img ? thumb : `<span>${thumb}</span>`}</div>
         <div class="p-info">
           <div class="p-name">${p.name || '(sem nome)'}</div>
-          <div class="p-meta">${categoryLabel(p.cat)} · R$ ${Number(p.price||0).toFixed(2)}</div>
+          <div class="p-meta">${categoryLabel(p.cat)} · ${temPromocao(p)?`<del>R$ ${Number(p.price).toFixed(2)}</del> · Promoção: R$ ${precoVenda(p).toFixed(2)}`:`R$ ${Number(p.price||0).toFixed(2)}`}</div>
           <div class="p-meta">${stockSummary(p)}</div>
         </div>
         <div class="p-actions">
@@ -236,6 +247,10 @@ function startListening(){
           <button class="btn btn-danger" onclick='deleteProduct(${JSON.stringify(d.id)})'>Excluir</button>
         </div>
       </div>`;
+    };
+    list.innerHTML = [['makers','Makers — filamentos, impressoras e acessórios'],['clientes','Catálogo de peças — clientes']].map(([publico,titulo])=>{
+      const docs=snap.docs.filter(d=>publicoProduto(d.data())===publico);
+      return '<section style="margin:24px 0"><h3>'+titulo+' ('+docs.length+')</h3>'+ (docs.length?docs.map(renderRow).join(''):'<p class="empty-note">Nenhum produto nesta área.</p>')+'</section>';
     }).join('');
   }, e => {
     console.error('Erro ao ouvir produtos:', e);
@@ -287,6 +302,8 @@ async function saveProduct(){
   const name = document.getElementById('fName').value.trim();
   const cat = document.getElementById('fCat').value;
   const price = parseFloat(document.getElementById('fPrice').value);
+  const promoRaw = document.getElementById('fPromo').value.trim();
+  const precoPromocional = promoRaw === '' ? null : Number(promoRaw);
   const desc = document.getElementById('fDesc').value.trim();
   const icon = document.getElementById('fIcon').value.trim();
   const file = document.getElementById('fPhoto').files[0];
@@ -299,6 +316,8 @@ async function saveProduct(){
     return;
   }
 
+  if(precoPromocional!==null && (!Number.isFinite(precoPromocional)||precoPromocional<=0||precoPromocional>=price)){status.className='err';status.textContent='O preço promocional deve ser maior que zero e menor que o preço normal.';return;}
+
   let cores;
   try{
     cores = collectColors();
@@ -309,7 +328,7 @@ async function saveProduct(){
   status.textContent = 'Salvando...';
 
   try{
-    const data = { name, cat, price, desc, icon: icon || null, cores, publico: document.getElementById('fPublico').value };
+    const data = { name, cat, price, precoPromocional, desc, icon: icon || null, cores, publico: document.getElementById('fPublico').value };
 
     if(file){
       status.textContent = 'Enviando foto...';
@@ -354,6 +373,7 @@ async function editProduct(id){
   if(p.cat&&![...categorySelect.options].some(o=>o.value===p.cat))categorySelect.add(new Option(p.cat,p.cat));
   categorySelect.value = p.cat || 'chaveiros';
   document.getElementById('fPrice').value = p.price ?? '';
+  document.getElementById('fPromo').value = p.precoPromocional ?? '';
   document.getElementById('fDesc').value = p.desc || '';
   document.getElementById('fIcon').value = p.icon || '';
   document.getElementById('fPhoto').value = '';
@@ -381,6 +401,7 @@ function resetForm(){
   document.getElementById('fName').value = '';
   document.getElementById('fCat').value = 'chaveiros';
   document.getElementById('fPrice').value = '';
+  document.getElementById('fPromo').value = '';
   document.getElementById('fDesc').value = '';
   document.getElementById('fIcon').value = '';
   document.getElementById('fPhoto').value = '';
