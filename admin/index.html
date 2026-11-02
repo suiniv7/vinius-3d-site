@@ -112,8 +112,12 @@ button:focus-visible,input:focus-visible{outline:3px solid #225bb0;outline-offse
           <input type="text" id="fName" placeholder="ex: Chaveiro Geométrico">
         </div>
         <div class="field">
+          <label for="fPublico">Mostrar para</label>
+          <select id="fPublico"><option value="">Automático pela categoria e nome</option><option value="makers">Makers — site principal</option><option value="clientes">Clientes — catálogo de peças</option></select>
           <label>Categoria</label>
           <select id="fCat">
+            <option value="impressoras">🖨️ Impressoras</option>
+            <option value="acessorios">🔧 Acessórios e insumos</option>
             <option value="filamentos">🧵 Filamentos</option>
             <option value="chaveiros">🔑 Chaveiros</option>
             <option value="brinquedos">🧸 Brinquedos</option>
@@ -305,7 +309,7 @@ async function saveProduct(){
   status.textContent = 'Salvando...';
 
   try{
-    const data = { name, cat, price, desc, icon: icon || null, cores };
+    const data = { name, cat, price, desc, icon: icon || null, cores, publico: document.getElementById('fPublico').value };
 
     if(file){
       status.textContent = 'Enviando foto...';
@@ -330,7 +334,7 @@ async function saveProduct(){
   }catch(e){
     console.error(e);
     status.className = 'err';
-    status.textContent = 'Deu erro ao salvar. Confere a conexão e as regras do Firestore/Storage.';
+    status.textContent = 'Não foi possível salvar: ' + (e.code || '') + ' — ' + (e.message || 'Tente novamente.');
   }finally{
     saveBtn.disabled = false;
   }
@@ -341,6 +345,7 @@ async function editProduct(id){
   if(!doc.exists) return;
   const p = doc.data();
   editingId = id;
+  document.getElementById('fPublico').value=p.publico||'';
   document.getElementById('colorRows').replaceChildren();
   (Array.isArray(p.cores)?p.cores:[]).forEach(addColorRow);
   document.getElementById('formTitle').textContent = 'Editar produto';
@@ -371,6 +376,7 @@ async function deleteProduct(id){
 function resetForm(){
   document.getElementById('colorRows').replaceChildren();
   editingId = null;
+  document.getElementById('fPublico').value='';
   document.getElementById('formTitle').textContent = 'Novo produto';
   document.getElementById('fName').value = '';
   document.getElementById('fCat').value = 'chaveiros';

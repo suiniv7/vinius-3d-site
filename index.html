@@ -11,7 +11,7 @@
   gtag('config', 'AW-18399189932');
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vinius 3D — Peças impressas sob medida</title>
+<title>Vinius 3D — Filamentos, impressoras e Apps</title>
 <style>
   :root{
     --bg:#ffffff;
@@ -173,10 +173,10 @@
     <div class="logo"><span class="lv">Vinius</span><span class="l3d">3D</span></div>
     <nav class="links" id="navLinks">
       <a href="#produtos" onclick="closeNav()">Produtos</a>
-      <a href="#peca" onclick="closeNav()">Faça sua peça</a>
+
       <a href="#sobre" onclick="closeNav()">Sobre</a>
       <a href="#contato" onclick="closeNav()">Contato</a>
-      <a href="app/index.html" onclick="closeNav()">Calculadora</a>
+      <a href="apps/index.html" onclick="closeNav()">Apps</a>
     </nav>
     <div class="nav-right">
       <button class="cart-btn" onclick="openCart()">🛒 <span class="cart-label">Carrinho</span> <span class="cart-count" id="cartCount">0</span></button>
@@ -192,12 +192,12 @@
 </div>
 
 <section class="hero">
-  <span class="badge-note">Impressão 3D sob encomenda</span>
-  <h1>Suas ideias, impressas em 3D com qualidade e capricho</h1>
-  <p class="lead">Chaveiros, brinquedos, miniaturas e peças personalizadas — do catálogo pronto ou sob medida, do seu jeito.</p>
+  <span class="badge-note">Para makers</span>
+  <h1>Tudo para dar vida às suas próximas impressões</h1>
+  <p class="lead">Filamentos, impressoras e acessórios para sua bancada. E Apps para calcular custos e organizar suas vendas.</p>
   <div class="hero-actions">
     <a class="btn btn-primary" href="#produtos">Ver produtos</a>
-    <a class="btn btn-secondary" href="#peca">Pedir orçamento</a>
+    <a class="btn btn-secondary" href="apps/index.html">Conhecer Apps</a>
   </div>
 </section>
 
@@ -210,29 +210,10 @@
   <div class="grid" id="grid"></div>
 </section>
 
-<section id="peca">
-  <div class="section-head">
-    <h2>Faça sua peça</h2>
-    <p>Não achou o que precisa no catálogo? Envie os detalhes e a gente te passa um orçamento.</p>
-  </div>
-  <div class="custom-panel">
-    <div class="field full"><label>Nome ou descrição da peça</label><input type="text" id="pecaNome" placeholder="ex: suporte de celular articulado"></div>
-    <div class="field"><label>Medidas (aprox.)</label><input type="text" id="pecaMedidas" placeholder="ex: 10cm x 5cm x 3cm"></div>
-    <div class="field"><label>Quantidade</label><input type="number" id="pecaQtd" min="1" value="1"></div>
-    <div class="field"><label>Cor</label><input type="text" id="pecaCor" placeholder="ex: preto, vermelho..."></div>
-    <div class="field"><label>Seu WhatsApp</label><input type="text" id="pecaWhats" placeholder="(00) 00000-0000"></div>
-    <div class="field full"><label>Observações</label><textarea rows="3" id="pecaObs" placeholder="Detalhes extras sobre a peça..."></textarea></div>
-    <div class="field full">
-      <button class="btn btn-primary" style="justify-content:center;" onclick="sendPecaOrcamento()">Solicitar orçamento pelo WhatsApp</button>
-      <p style="font-size:12px;margin-top:8px;">📎 Tem foto ou arquivo de referência? Manda direto na conversa do WhatsApp depois de clicar aqui.</p>
-    </div>
-  </div>
-</section>
-
 <section id="sobre">
   <div class="section-head"><h2>Sobre</h2></div>
   <div class="about-box">
-    <p>A Vinius 3D nasceu da paixão por transformar ideias em objetos reais através da impressão 3D. Trabalhamos com peças do catálogo e projetos personalizados, sempre com atenção aos detalhes e capricho no acabamento.</p>
+    <p>A Vinius 3D nasceu da paixão por transformar ideias em objetos reais através da impressão 3D. Nesta área, reunimos materiais, máquinas, acessórios e ferramentas para quem produz com impressão 3D.</p>
   </div>
 </section>
 
@@ -257,7 +238,7 @@
   </div>
 </section>
 
-<footer>Vinius 3D · mockup de layout — conteúdo e preços são exemplos</footer>
+<footer>Vinius 3D · Para quem cria com impressão 3D</footer>
 
 <div class="overlay" id="overlay" onclick="closeCart()"></div>
 <aside class="drawer" id="drawer">
@@ -298,6 +279,14 @@
 <script>
 /* Produtos e categorias agora vêm do Firestore ("site_produtos" e "site_categorias").
    Edite tudo — nome, preço, foto, categorias — pelo painel em /admin/ (login necessário). */
+const PUBLICO_ATUAL = 'makers';
+function publicoProduto(p,categorias=[]) {
+ if(p.publico==='makers'||p.publico==='clientes')return p.publico;
+ if(['chaveiros','brinquedos','personalizados','miniaturas','educativos','utilidades'].includes(p.cat))return 'clientes';
+ const texto=[p.cat,p.name,categorias.find(c=>c.id===p.cat)?.name].join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+ return /filament|impressora|bambu|snapmaker|flashforge|\bpla\b|\bpetg\b|\babs\b|neodimio|\bimas?\b|acessorios|insumos|bico|hotend/.test(texto)?'makers':'clientes';
+}
+
 let products = [];
 let categories = [];
 
@@ -323,13 +312,17 @@ async function init(){
   const grid = document.getElementById('grid');
   grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:40px 0;">Carregando produtos...</p>';
   await Promise.all([loadCategories(), loadProducts()]);
+  products=products.filter(p=>publicoProduto(p,categories)===PUBLICO_ATUAL);
+  categories=categories.filter(c=>products.some(p=>p.cat===c.id));
+  const nomesCategorias={filamentos:'Filamentos',impressoras:'Impressoras',acessorios:'Acessórios',chaveiros:'Chaveiros',brinquedos:'Brinquedos',personalizados:'Personalizados',miniaturas:'Miniaturas',educativos:'Educativos',utilidades:'Peças e utilidades'};
+  for(const p of products)if(p.cat&&!categories.some(c=>c.id===p.cat))categories.push({id:p.cat,name:nomesCategorias[p.cat]||p.cat});
   if(products.some(p=>p.cat==='filamentos')&&!categories.some(c=>c.id==='filamentos')){
     categories.push({id:'filamentos',name:'Filamentos',icon:'🧵'});
   }
   renderTabs();
   renderOfferBanner();
   if(!products.length){
-    grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-dim);">Nenhum produto cadastrado ainda. Adicione produtos pelo painel de admin em <a href="/admin/">/admin/</a>.</p>';
+    grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-dim);">Nosso catálogo está sendo preparado. Fale conosco pelo WhatsApp para consultar opções.</p>';
   }else{
     renderGrid();
   }
@@ -342,7 +335,7 @@ function renderOfferBanner(){
   wrap.innerHTML = `
     <span class="offer-label">O QUE TEM AQUI</span>
     ${catPills}
-    <a class="offer-pill" href="#peca">✏️ Peça sob encomenda</a>
+    <a class="offer-pill" href="apps/index.html">Apps para makers</a>
   `;
 }
 

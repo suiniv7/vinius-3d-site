@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<!-- Google Ads: medição de início de finalização pelo WhatsApp -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18399189932"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'AW-18399189932');
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vinius 3D — Catálogo de peças e encomendas</title>
+<style>
+  :root{
+    --bg:#ffffff;
+    --bg-alt:#f6f7f6;
+    --card:#ffffff;
+    --card-hover:#f6f7f6;
+    --border:#e4e6e4;
+    --text:#161616;
+    --text-dim:#6b6f6c;
+    --accent:#4CAF6D;
+    --accent-dark:#398f56;
+    --accent-soft:rgba(76,175,109,0.12);
+    --radius:14px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);line-height:1.5;}
+  a{color:inherit;}
+  img,svg{display:block;}
+  h1,h2,h3{margin:0 0 8px;font-weight:800;letter-spacing:-0.01em;}
+  p{margin:0 0 12px;color:var(--text-dim);}
+  section{padding:64px 20px;max-width:1080px;margin:0 auto;}
+  .badge-note{display:inline-block;background:var(--accent-soft);color:var(--accent-dark);font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;margin-bottom:14px;letter-spacing:.02em;}
+
+  /* ---- top nav ---- */
+  header.nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,0.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);}
+  .nav-inner{max-width:1080px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 20px;gap:12px;}
+  .logo{display:flex;align-items:baseline;gap:1px;font-weight:800;font-size:21px;letter-spacing:-0.02em;flex-shrink:0;}
+  .logo .lv{color:#161616;}
+  .logo .l3d{color:var(--accent);}
+  .nav-right{display:flex;align-items:center;gap:14px;}
+  nav.links{display:flex;gap:22px;font-size:14px;color:var(--text-dim);}
+  nav.links a{text-decoration:none;transition:color .15s;white-space:nowrap;}
+  nav.links a:hover{color:var(--text);}
+  .cart-btn{position:relative;background:var(--text);border:1px solid var(--text);color:#fff;padding:9px 14px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;flex-shrink:0;white-space:nowrap;}
+  .cart-btn:hover{background:#000;}
+  .cart-count{background:var(--accent);color:#0a2b16;font-size:11px;font-weight:800;min-width:18px;height:18px;border-radius:999px;display:flex;align-items:center;justify-content:center;padding:0 4px;}
+  .nav-toggle{display:none;background:none;border:1px solid var(--border);border-radius:8px;width:38px;height:38px;font-size:18px;cursor:pointer;color:var(--text);flex-shrink:0;}
+
+  @media(max-width:760px){
+    nav.links{display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border-bottom:1px solid var(--border);flex-direction:column;gap:0;padding:6px 20px 14px;box-shadow:0 8px 16px rgba(0,0,0,0.06);}
+    nav.links.open{display:flex;}
+    nav.links a{padding:10px 0;border-bottom:1px solid var(--border);}
+    nav.links a:last-child{border-bottom:none;}
+    .nav-toggle{display:block;}
+    .cart-btn .cart-label{display:none;}
+    .cart-btn{padding:9px 10px;}
+  }
+
+  /* ---- offerings banner ---- */
+  .offer-banner{background:var(--bg-alt);border-bottom:1px solid var(--border);}
+  .offer-inner{max-width:1080px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:10px;overflow-x:auto;}
+  .offer-label{font-size:12px;font-weight:700;color:var(--text-dim);white-space:nowrap;padding-right:6px;border-right:1px solid var(--border);margin-right:2px;}
+  .offer-pill{white-space:nowrap;background:#fff;border:1px solid var(--border);color:var(--text);font-size:13px;font-weight:600;padding:7px 14px;border-radius:999px;text-decoration:none;display:flex;align-items:center;gap:6px;transition:border-color .15s, color .15s;}
+  .offer-pill:hover{border-color:var(--accent);color:var(--accent-dark);}
+
+  /* ---- hero ---- */
+  .hero{padding:80px 20px 64px;text-align:center;background:radial-gradient(circle at 50% 0%, rgba(76,175,109,0.08), transparent 60%);}
+  .hero h1{font-size:clamp(30px,5vw,48px);max-width:720px;margin:0 auto 16px;color:#111;}
+  .hero p.lead{max-width:520px;margin:0 auto 32px;font-size:17px;}
+  .hero-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
+  .btn{border:none;border-radius:11px;padding:14px 26px;font-size:15px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:transform .12s, opacity .12s;}
+  .btn:hover{transform:translateY(-1px);}
+  .btn-primary{background:var(--accent);color:#0a2b16;}
+  .btn-secondary{background:#fff;color:var(--text);border:1.5px solid var(--text);}
+
+  /* ---- section headers ---- */
+  .section-head{margin-bottom:32px;}
+  .section-head h2{font-size:28px;color:#111;}
+  .section-head p{max-width:560px;}
+
+  /* ---- category tabs ---- */
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:28px;}
+  .tab{background:#fff;border:1px solid var(--border);color:var(--text-dim);padding:8px 16px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;}
+  .tab.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-dark);}
+
+  /* ---- product grid ---- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;transition:border-color .15s, box-shadow .15s;}
+  .card:hover{border-color:var(--accent);box-shadow:0 4px 16px rgba(0,0,0,0.05);}
+  .card-img{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:42px;background:var(--bg-alt);overflow:hidden;}
+  .card-img img{width:100%;height:100%;object-fit:cover;}
+  .card-body{padding:14px;display:flex;flex-direction:column;gap:6px;flex:1;}
+  .card-body h3{font-size:15px;color:#111;}
+  .card-body .desc{font-size:13px;color:var(--text-dim);margin:0;flex:1;}
+  .card-foot{display:flex;align-items:center;justify-content:space-between;margin-top:8px;}
+  .price{font-weight:800;color:var(--accent-dark);font-size:15px;}
+  .qty-row{display:flex;align-items:center;gap:8px;margin-top:6px;}
+  .qty-row button{width:26px;height:26px;border-radius:7px;border:1px solid var(--border);background:var(--bg-alt);color:var(--text);cursor:pointer;font-size:14px;}
+  .qty-row .qn{min-width:18px;text-align:center;font-size:13px;}
+  .add-btn{width:100%;margin-top:10px;background:var(--accent-soft);color:var(--accent-dark);border:1px solid var(--accent);border-radius:9px;padding:8px;font-size:13px;font-weight:700;cursor:pointer;}
+  .add-btn:hover{background:var(--accent);color:#0a2b16;}
+
+  /* ---- faça sua peça ---- */
+  .custom-panel{background:var(--bg-alt);border:1px solid var(--border);border-radius:var(--radius);padding:28px;display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media(max-width:640px){.custom-panel{grid-template-columns:1fr;}}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:13px;font-weight:700;color:var(--text-dim);}
+  .field input,.field select,.field textarea{background:#fff;border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-size:14px;font-family:inherit;}
+  .field.full{grid-column:1/-1;}
+
+  /* ---- sobre ---- */
+  .about-box{background:var(--bg-alt);border:1px solid var(--border);border-radius:var(--radius);padding:28px;max-width:640px;}
+
+  /* ---- contato ---- */
+  .contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;}
+  .contact-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;text-align:center;text-decoration:none;}
+  .contact-card:hover{border-color:var(--accent);}
+  .contact-card .ic{font-size:26px;margin-bottom:8px;}
+  .contact-card .lbl{font-weight:700;font-size:14px;color:#111;}
+  .contact-card .sub{font-size:12px;color:var(--text-dim);}
+
+  footer{text-align:center;padding:32px 20px;color:var(--text-dim);font-size:12px;border-top:1px solid var(--border);}
+
+  /* ---- cart drawer ---- */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);opacity:0;pointer-events:none;transition:opacity .2s;z-index:90;}
+  .overlay.open{opacity:1;pointer-events:auto;}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:min(400px,92vw);background:#fff;border-left:1px solid var(--border);z-index:100;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;}
+  .drawer.open{transform:translateX(0);}
+  .drawer-head{padding:20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+  .drawer-head h3{margin:0;font-size:17px;color:#111;}
+  .drawer-close{background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;}
+  .drawer-body{flex:1;overflow-y:auto;padding:16px 20px;}
+  .drawer-item{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;}
+  .drawer-item .di-name{font-weight:700;color:#111;}
+  .drawer-item .di-meta{color:var(--text-dim);font-size:12px;}
+  .drawer-empty{color:var(--text-dim);font-size:13px;text-align:center;padding:40px 0;}
+  .drawer-foot{padding:18px 20px;border-top:1px solid var(--border);background:var(--bg-alt);}
+  .total-row{display:flex;justify-content:space-between;font-size:16px;font-weight:800;margin-bottom:14px;color:#111;}
+  .fulfil-row{display:flex;gap:8px;margin-bottom:14px;}
+  .fulfil-opt{flex:1;text-align:center;padding:9px;border:1px solid var(--border);border-radius:9px;font-size:13px;cursor:pointer;color:var(--text-dim);background:#fff;}
+  .fulfil-opt.active{border-color:var(--accent);color:var(--accent-dark);background:var(--accent-soft);}
+  .drawer-foot input,.drawer-foot textarea{width:100%;background:#fff;border:1px solid var(--border);border-radius:9px;padding:9px 11px;color:var(--text);font-size:13px;margin-bottom:8px;font-family:inherit;}
+  .send-btn{width:100%;background:#25D366;color:#06210f;border:none;border-radius:10px;padding:12px;font-weight:800;font-size:14px;cursor:pointer;}
+
+  .mock-tag{position:fixed;bottom:14px;left:14px;background:#fff;border:1px solid var(--border);color:var(--text-dim);font-size:11px;padding:6px 10px;border-radius:8px;z-index:80;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+
+  .color-field{border:0;padding:0;margin:14px 0 0;min-width:0;}
+  .color-field legend{font-size:14px;font-weight:700;margin-bottom:8px;}
+  .color-options{display:flex;flex-wrap:wrap;gap:8px;}
+  .color-option{display:inline-flex;align-items:center;gap:7px;padding:9px 10px;border:1px solid var(--border);border-radius:9px;background:#fff;color:var(--text);font:inherit;font-size:14px;cursor:pointer;text-align:left;}
+  .color-option[aria-pressed="true"]{border:2px solid var(--accent-dark);padding:8px 9px;background:var(--accent-soft);}
+  .color-option.sold-out{border-style:dashed;}
+  .color-option small{display:block;font-size:12px;color:#6b6f6c;}
+  .swatch{width:18px;height:18px;border:1px solid #888;border-radius:50%;flex-shrink:0;}
+  .stock-note{font-size:14px;margin:10px 0 0;color:var(--accent-dark);}
+  .stock-note.unavailable{color:#825014;}
+  .add-btn:disabled{opacity:.55;cursor:not-allowed;}
+  .notify-btn{display:block;text-align:center;text-decoration:none;width:100%;margin-top:10px;border:1px solid var(--text);border-radius:9px;padding:10px;background:#fff;color:var(--text);font-size:14px;font-weight:700;}
+  .notify-help{font-size:12px;margin:6px 0 0;}
+  button:focus-visible,a:focus-visible{outline:3px solid #225bb0;outline-offset:3px;}
+
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <div class="logo"><span class="lv">Vinius</span><span class="l3d">3D</span></div>
+    <nav class="links" id="navLinks">
+      <a href="#produtos" onclick="closeNav()">Produtos</a>
+      <a href="#peca" onclick="closeNav()">Faça sua peça</a>
+      <a href="#sobre" onclick="closeNav()">Sobre</a>
+      <a href="#contato" onclick="closeNav()">Contato</a>
+
+    </nav>
+    <div class="nav-right">
+      <button class="cart-btn" onclick="openCart()">🛒 <span class="cart-label">Carrinho</span> <span class="cart-count" id="cartCount">0</span></button>
+      <button class="nav-toggle" onclick="toggleNav()" aria-label="Menu">☰</button>
+    </div>
+  </div>
+</header>
+
+<div class="offer-banner">
+  <div class="offer-inner" id="offerInner">
+    <span class="offer-label">O QUE TEM AQUI</span>
+  </div>
+</div>
+
+<section class="hero">
+  <span class="badge-note">Peças prontas e sob encomenda</span>
+  <h1>Suas ideias, impressas em 3D com qualidade e capricho</h1>
+  <p class="lead">Chaveiros, brinquedos, miniaturas e peças personalizadas — do catálogo pronto ou sob medida, do seu jeito.</p>
+  <div class="hero-actions">
+    <a class="btn btn-primary" href="#produtos">Ver produtos</a>
+    <a class="btn btn-secondary" href="#peca">Pedir orçamento</a>
+  </div>
+</section>
+
+<section id="produtos">
+  <div class="section-head">
+    <h2>Produtos</h2>
+    <p>Escolha uma categoria e monte seu pedido. Depois é só finalizar e enviar pelo WhatsApp.</p>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="grid" id="grid"></div>
+</section>
+
+<section id="peca">
+  <div class="section-head">
+    <h2>Faça sua peça</h2>
+    <p>Não achou o que precisa no catálogo? Envie os detalhes e a gente te passa um orçamento.</p>
+  </div>
+  <div class="custom-panel">
+    <div class="field full"><label>Nome ou descrição da peça</label><input type="text" id="pecaNome" placeholder="ex: suporte de celular articulado"></div>
+    <div class="field"><label>Medidas (aprox.)</label><input type="text" id="pecaMedidas" placeholder="ex: 10cm x 5cm x 3cm"></div>
+    <div class="field"><label>Quantidade</label><input type="number" id="pecaQtd" min="1" value="1"></div>
+    <div class="field"><label>Cor</label><input type="text" id="pecaCor" placeholder="ex: preto, vermelho..."></div>
+    <div class="field"><label>Seu WhatsApp</label><input type="text" id="pecaWhats" placeholder="(00) 00000-0000"></div>
+    <div class="field full"><label>Observações</label><textarea rows="3" id="pecaObs" placeholder="Detalhes extras sobre a peça..."></textarea></div>
+    <div class="field full">
+      <button class="btn btn-primary" style="justify-content:center;" onclick="sendPecaOrcamento()">Solicitar orçamento pelo WhatsApp</button>
+      <p style="font-size:12px;margin-top:8px;">📎 Tem foto ou arquivo de referência? Manda direto na conversa do WhatsApp depois de clicar aqui.</p>
+    </div>
+  </div>
+</section>
+
+<section id="sobre">
+  <div class="section-head"><h2>Sobre</h2></div>
+  <div class="about-box">
+    <p>A Vinius 3D nasceu da paixão por transformar ideias em objetos reais através da impressão 3D. Trabalhamos com peças do catálogo e projetos personalizados, sempre com atenção aos detalhes e capricho no acabamento.</p>
+  </div>
+</section>
+
+<section id="contato">
+  <div class="section-head"><h2>Contato</h2></div>
+  <div class="contact-grid">
+    <a class="contact-card" href="https://wa.me/5598991019019" target="_blank" rel="noopener">
+      <div class="ic">💬</div>
+      <div class="lbl">WhatsApp</div>
+      <div class="sub">Fale direto conosco</div>
+    </a>
+    <a class="contact-card" href="#">
+      <div class="ic">📸</div>
+      <div class="lbl">Instagram</div>
+      <div class="sub">@vinius3d</div>
+    </a>
+    <a class="contact-card" href="#">
+      <div class="ic">📍</div>
+      <div class="lbl">Google Maps</div>
+      <div class="sub">Ver localização</div>
+    </a>
+  </div>
+</section>
+
+<footer>Vinius 3D · Peças impressas e projetos sob encomenda</footer>
+
+<div class="overlay" id="overlay" onclick="closeCart()"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-head">
+    <h3>Seu pedido</h3>
+    <button class="drawer-close" onclick="closeCart()">✕</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+  <div class="drawer-foot">
+    <div class="fulfil-row">
+      <div class="fulfil-opt active" id="optRetirar" onclick="setFulfil('retirar')">📍 Retirar</div>
+      <div class="fulfil-opt" id="optEntrega" onclick="setFulfil('entrega')">🚚 Entrega</div>
+    </div>
+    <input type="text" id="custName" placeholder="Seu nome">
+    <input type="text" id="custWhats" placeholder="Seu WhatsApp">
+    <textarea id="custObs" rows="2" placeholder="Observações (opcional)"></textarea>
+    <div class="total-row"><span>Total</span><span id="cartTotal">R$ 0</span></div>
+    <button class="send-btn" onclick="sendOrder()">Enviar pedido pelo WhatsApp</button>
+  </div>
+</aside>
+
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDA1lRiWGGAfKMaX10StHAG46WMzLtraS8",
+    authDomain: "vinius3d-12395.firebaseapp.com",
+    projectId: "vinius3d-12395",
+    storageBucket: "vinius3d-12395.firebasestorage.app",
+    messagingSenderId: "1032706645900",
+    appId: "1:1032706645900:web:2a0b2b02171ec5e5d340a9",
+    measurementId: "G-3G6GDE3WT5"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+</script>
+
+<script>
+/* Produtos e categorias agora vêm do Firestore ("site_produtos" e "site_categorias").
+   Edite tudo — nome, preço, foto, categorias — pelo painel em /admin/ (login necessário). */
+const PUBLICO_ATUAL = 'clientes';
+function publicoProduto(p,categorias=[]) {
+ if(p.publico==='makers'||p.publico==='clientes')return p.publico;
+ if(['chaveiros','brinquedos','personalizados','miniaturas','educativos','utilidades'].includes(p.cat))return 'clientes';
+ const texto=[p.cat,p.name,categorias.find(c=>c.id===p.cat)?.name].join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+ return /filament|impressora|bambu|snapmaker|flashforge|\bpla\b|\bpetg\b|\babs\b|neodimio|\bimas?\b|acessorios|insumos|bico|hotend/.test(texto)?'makers':'clientes';
+}
+
+let products = [];
+let categories = [];
+
+async function loadCategories(){
+  try{
+    const snap = await db.collection('site_categorias').orderBy('ordem').get();
+    categories = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  }catch(e){
+    console.error('Erro ao carregar categorias do Firestore:', e);
+    categories = [];
+  }
+}
+async function loadProducts(){
+  try{
+    const snap = await db.collection('site_produtos').orderBy('name').get();
+    products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  }catch(e){
+    console.error('Erro ao carregar produtos do Firestore:', e);
+    products = [];
+  }
+}
+async function init(){
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:40px 0;">Carregando produtos...</p>';
+  await Promise.all([loadCategories(), loadProducts()]);
+  products=products.filter(p=>publicoProduto(p,categories)===PUBLICO_ATUAL);
+  categories=categories.filter(c=>products.some(p=>p.cat===c.id));
+  const nomesCategorias={filamentos:'Filamentos',impressoras:'Impressoras',acessorios:'Acessórios',chaveiros:'Chaveiros',brinquedos:'Brinquedos',personalizados:'Personalizados',miniaturas:'Miniaturas',educativos:'Educativos',utilidades:'Peças e utilidades'};
+  for(const p of products)if(p.cat&&!categories.some(c=>c.id===p.cat))categories.push({id:p.cat,name:nomesCategorias[p.cat]||p.cat});
+  if(products.some(p=>p.cat==='filamentos')&&!categories.some(c=>c.id==='filamentos')){
+    categories.push({id:'filamentos',name:'Filamentos',icon:'🧵'});
+  }
+  renderTabs();
+  renderOfferBanner();
+  if(!products.length){
+    grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-dim);">Nosso catálogo está sendo preparado. Fale conosco pelo WhatsApp para consultar opções.</p>';
+  }else{
+    renderGrid();
+  }
+  updateCartUI();
+}
+function catLabel(c){ return c.icon ? `${c.icon} ${c.name}` : (c.name || c.id); }
+function renderOfferBanner(){
+  const wrap = document.getElementById('offerInner');
+  const catPills = categories.map(c => `<a class="offer-pill" href="#produtos" onclick="setCat('${c.id}')">${catLabel(c)}</a>`).join('');
+  wrap.innerHTML = `
+    <span class="offer-label">O QUE TEM AQUI</span>
+    ${catPills}
+    <a class="offer-pill" href="#peca">✏️ Peça sob encomenda</a>
+  `;
+}
+
+let activeCat = 'todos';
+let qtyDraft = {};
+let cart = {};
+let fulfil = 'retirar';
+
+function renderTabs(){
+  const tabs = document.getElementById('tabs');
+  const all = [{id:'todos', name:'Todos', icon:''}, ...categories];
+  tabs.innerHTML = all.map(c =>
+    `<div class="tab ${c.id===activeCat?'active':''}" onclick="setCat('${c.id}')">${catLabel(c)}</div>`
+  ).join('');
+}
+function setCat(id){ activeCat = id; renderTabs(); renderGrid(); }
+
+/* Cores por produto no Firestore:
+   cores: [{id: 'preto', nome: 'Preto', hex: '#161616', estoque: 5}]
+   estoque é a quantidade disponível; zero significa fora de estoque.
+   O aviso abre uma solicitação no WhatsApp, para atendimento manual da loja. */
+const selectedColors = Object.create(null);
+function esc(value){return String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function arg(value){return esc(JSON.stringify(String(value)));}
+function money(value){return Number(value).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
+function colorsOf(p){
+  return (Array.isArray(p.cores) ? p.cores : []).map((c,index)=>({
+    id:String(c.id ?? index), name:String(c.nome || c.name || 'Cor sem nome'),
+    hex:/^#[0-9a-f]{6}$/i.test(c.hex || '') ? c.hex : '#dddddd',
+    stock:typeof c.estoque==='number' && Number.isFinite(c.estoque) ? Math.max(0,Math.floor(c.estoque)) : 0
+  }));
+}
+function isFilament(p){return /filamento/i.test([p.name,p.cat,categories.find(c=>c.id===p.cat)?.name].join(' '));}
+function colorFor(p){return colorsOf(p).find(c=>c.id===selectedColors[p.id]);}
+function itemKey(id,colorId){return JSON.stringify([id,colorId ?? null]);}
+function notifyUrl(p,c){return 'https://wa.me/5598991019019?text='+encodeURIComponent(`Olá! Quero que me avisem quando chegar: ${p.name} — Cor: ${c.name}.`);}
+function selectColor(id,colorId){
+  selectedColors[id]=colorId;qtyDraft[id]=1;renderGrid();
+  const card=[...document.querySelectorAll('[data-product]')].find(el=>el.dataset.product===id);
+  card?.querySelector('[aria-pressed="true"]')?.focus();
+}
+function renderGrid(){
+  const grid=document.getElementById('grid');
+  const list=activeCat==='todos'?products:products.filter(p=>p.cat===activeCat);
+  grid.innerHTML=list.map(p=>{
+    qtyDraft[p.id]=qtyDraft[p.id]||1;
+    const colors=colorsOf(p), color=colorFor(p), needsColor=colors.length>0;
+    const unconfigured=isFilament(p)&&!needsColor;
+    const unavailable=color&&color.stock===0;
+    const canAdd=!unconfigured&&(!needsColor||color&&color.stock>0);
+    return `<div class="card" data-product="${esc(p.id)}">
+      <div class="card-img">${p.img?`<img src="${esc(p.img)}" alt="${esc(p.name)}" loading="lazy">`:esc(p.icon||'📦')}</div>
+      <div class="card-body"><h3>${esc(p.name)}</h3><p class="desc">${esc(p.desc)}</p>
+      <div class="card-foot"><span class="price">${money(p.price)}</span></div>
+      ${needsColor?`<fieldset class="color-field"><legend>Escolha a cor</legend><div class="color-options">${colors.map(c=>`<button type="button" class="color-option ${c.stock===0?'sold-out':''}" aria-pressed="${color?.id===c.id}" onclick="selectColor(${arg(p.id)},${arg(c.id)})"><span class="swatch" style="background:${c.hex}" aria-hidden="true"></span><span>${esc(c.name)}<small>${c.stock>0?'Disponível':'Fora de estoque'}</small></span></button>`).join('')}</div></fieldset>
+      <p class="stock-note ${unavailable?'unavailable':''}" role="status">${color?`${esc(color.name)} · ${unavailable?'Fora de estoque':color.stock+' disponível(is)'}`:'Selecione uma cor para continuar.'}</p>`:''}
+      ${unconfigured?'<p class="stock-note unavailable">Cores em atualização. Consulte a disponibilidade pelo WhatsApp.</p>':''}
+      ${unavailable?`<a class="notify-btn" href="${esc(notifyUrl(p,color))}" target="_blank" rel="noopener">Me avise quando chegar</a><p class="notify-help">Solicite o aviso pelo WhatsApp. Envie a mensagem para a loja acompanhar seu interesse.</p>`:
+      unconfigured?`<a class="notify-btn" href="https://wa.me/5598991019019?text=${encodeURIComponent('Olá! Quais cores estão disponíveis para '+p.name+'?')}" target="_blank" rel="noopener">Consultar cores pelo WhatsApp</a>`:
+      `<div class="qty-row"><button aria-label="Diminuir quantidade de ${esc(p.name)}" onclick="changeDraft(${arg(p.id)},-1)" ${!canAdd?'disabled':''}>−</button><span class="qn" id="qn-${esc(p.id)}">${qtyDraft[p.id]}</span><button aria-label="Aumentar quantidade de ${esc(p.name)}" onclick="changeDraft(${arg(p.id)},1)" ${!canAdd?'disabled':''}>+</button></div><button class="add-btn" onclick="addToCart(${arg(p.id)})" ${!canAdd?'disabled':''}>${canAdd?'Adicionar ao pedido':'Selecione uma cor'}</button>`}
+      </div></div>`;
+  }).join('')||'<p>Nenhum produto nesta categoria.</p>';
+}
+function changeDraft(id,delta){
+  const p=products.find(p=>p.id===id);if(!p)return;
+  const c=colorFor(p),used=cart[itemKey(id,c?.id)]?.qty||0;
+  const limit=c?Math.max(1,c.stock-used):Infinity;
+  qtyDraft[id]=Math.min(limit,Math.max(1,(qtyDraft[id]||1)+delta));
+  document.getElementById('qn-'+id).textContent=qtyDraft[id];
+}
+function addToCart(id){
+  const p=products.find(p=>p.id===id);if(!p)return;
+  const colors=colorsOf(p),c=colorFor(p);
+  if((isFilament(p)&&!colors.length)||(colors.length&&(!c||!c.stock)))return;
+  const key=itemKey(id,c?.id),q=qtyDraft[id]||1;
+  if(c&&(cart[key]?.qty||0)+q>c.stock){alert('A quantidade escolhida excede o estoque desta cor.');return;}
+  cart[key]=cart[key]?{...cart[key],qty:cart[key].qty+q}:{...p,key,colorId:c?.id,colorName:c?.name,qty:q};
+  qtyDraft[id]=1;renderGrid();updateCartUI();openCart();
+}
+function removeFromCart(key){delete cart[key];updateCartUI();}
+function cartQtyChange(key,delta){
+  const item=cart[key];if(!item)return;
+  const p=products.find(p=>p.id===item.id),c=p&&colorsOf(p).find(c=>c.id===item.colorId);
+  if(delta>0&&item.colorId!==undefined&&(!c||item.qty+delta>c.stock)){alert('Não há mais unidades disponíveis nesta cor.');return;}
+  item.qty+=delta;if(item.qty<=0)delete cart[key];updateCartUI();
+}
+function updateCartUI(){
+  const items=Object.values(cart),total=items.reduce((s,i)=>s+i.qty*i.price,0);
+  document.getElementById('cartCount').textContent=items.reduce((s,i)=>s+i.qty,0);
+  document.getElementById('cartTotal').textContent=money(total);
+  document.getElementById('drawerBody').innerHTML=items.length?items.map(i=>`<div class="drawer-item"><div><div class="di-name">${esc(i.name)}</div>${i.colorName?`<div class="di-meta">Cor: ${esc(i.colorName)}</div>`:''}<div class="di-meta">${money(i.price)} × ${i.qty} = ${money(i.price*i.qty)}</div></div><div style="display:flex;align-items:center;gap:6px"><button aria-label="Diminuir ${esc(i.name)} ${esc(i.colorName||'')}" onclick="cartQtyChange(${arg(i.key)},-1)">−</button><span>${i.qty}</span><button aria-label="Aumentar ${esc(i.name)} ${esc(i.colorName||'')}" onclick="cartQtyChange(${arg(i.key)},1)">+</button></div></div>`).join(''):'<div class="drawer-empty">Seu carrinho está vazio.<br>Adicione produtos para montar o pedido.</div>';
+}
+
+function setFulfil(v){
+  fulfil = v;
+  document.getElementById('optRetirar').classList.toggle('active', v==='retirar');
+  document.getElementById('optEntrega').classList.toggle('active', v==='entrega');
+}
+function sendPecaOrcamento(){
+  const nome = document.getElementById('pecaNome').value.trim();
+  const medidas = document.getElementById('pecaMedidas').value.trim();
+  const qtd = document.getElementById('pecaQtd').value || '1';
+  const cor = document.getElementById('pecaCor').value.trim();
+  const whats = document.getElementById('pecaWhats').value.trim();
+  const obs = document.getElementById('pecaObs').value.trim();
+
+  if(!nome && !medidas && !cor && !obs){
+    alert('Preenche pelo menos o nome da peça, as medidas, a cor ou uma observação pra gente entender o que você precisa.');
+    return;
+  }
+
+  let msg = 'Olá! Gostaria de um orçamento pra uma peça personalizada (Faça sua peça):%0A%0A';
+  if(nome) msg += `Peça: ${nome}%0A`;
+  msg += `Quantidade: ${qtd}%0A`;
+  if(medidas) msg += `Medidas: ${medidas}%0A`;
+  if(cor) msg += `Cor: ${cor}%0A`;
+  if(whats) msg += `Meu WhatsApp: ${whats}%0A`;
+  if(obs) msg += `Observações: ${obs}%0A`;
+  msg += '%0AVou mandar a foto/arquivo de referência aqui pelo WhatsApp.';
+  window.open('https://wa.me/5598991019019?text=' + msg, '_blank');
+}
+
+function toggleNav(){ document.getElementById('navLinks').classList.toggle('open'); }
+function closeNav(){ document.getElementById('navLinks').classList.remove('open'); }
+function openCart(){ document.getElementById('drawer').classList.add('open'); document.getElementById('overlay').classList.add('open'); }
+function closeCart(){ document.getElementById('drawer').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
+
+function sendOrder(){
+  const items = Object.values(cart);
+  if(!items.length){ alert('Adicione ao menos um produto ao pedido.'); return; }
+  const name = document.getElementById('custName').value || '(nome não informado)';
+  const whats = document.getElementById('custWhats').value || '(whatsapp não informado)';
+  const obs = document.getElementById('custObs').value;
+  const total = items.reduce((s,i)=>s+i.qty*i.price,0);
+  let msg = 'Olá! Gostaria de fazer um pedido:%0A%0A';
+  items.forEach(i => msg += encodeURIComponent(`${i.qty}x ${i.name}${i.colorName ? " — Cor: " + i.colorName : ""} — ${money(i.price*i.qty)}`) + "%0A");
+  msg += `%0ATotal: R$ ${total}%0A`;
+  msg += fulfil==='retirar' ? 'Retirada%0A' : 'Entrega%0A';
+  msg += `${name} — ${whats}`;
+  if(obs) msg += `%0AObs: ${obs}`;
+  window.open('https://wa.me/5598991019019?text=' + msg, '_blank');
+  // Mede o início da finalização, sem enviar dados pessoais ou a mensagem ao Google.
+  // O WhatsApp abre diretamente no clique, mesmo se a tag estiver bloqueada.
+  try {
+    if (typeof gtag === 'function') {
+      gtag('event', 'conversion', {
+        'send_to': 'AW-18399189932/tXubCOGTgPQcEKy3tcVE',
+        'value': 1.0,
+        'currency': 'BRL'
+      });
+    }
+  } catch (error) {
+    // Uma falha na medição não interrompe o pedido.
+  }
+}
+
+init();
+</script>
+
+</body>
+</html>
