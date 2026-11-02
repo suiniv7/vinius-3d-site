@@ -78,7 +78,25 @@
 @media(max-width:540px){.color-row{grid-template-columns:1fr 76px}.product-row{flex-wrap:wrap}.p-actions{margin-left:auto}}
 button:focus-visible,input:focus-visible{outline:3px solid #225bb0;outline-offset:2px}
 </style>
-<script src="../kits-core.js"></script>
+<script>
+/* Preços calculados em centavos; faixas não se acumulam. */
+const Kits = (()=>{
+ const centavos=n=>Math.round((Number(n)+Number.EPSILON)*100);
+ function opcoes(p){return Array.isArray(p.opcoes)?p.opcoes:[];}
+ function ativo(p){return opcoes(p).length>0;}
+ function calcular(p,quantidades){
+  const linhas=opcoes(p).map(o=>{const qtd=Number(quantidades[o.id]||0);if(!Number.isSafeInteger(qtd)||qtd<0||qtd>999)throw Error('Use quantidades inteiras entre 0 e 999.');const preco=centavos(o.preco);if(!Number.isSafeInteger(preco)||preco<0)throw Error('Preço inválido.');return{...o,qtd,subtotal:preco*qtd,desconto:0};});
+  const elegiveis=linhas.filter(l=>l.participaDesconto!==false),unidades=elegiveis.reduce((n,l)=>n+l.qtd,0);
+  const faixa=(p.faixasDesconto||[]).filter(f=>Number.isInteger(f.minimo)&&f.minimo>=2&&f.percentual>0&&f.percentual<100&&unidades>=f.minimo).sort((a,b)=>b.minimo-a.minimo)[0];
+  const base=elegiveis.reduce((n,l)=>n+l.subtotal,0),desconto=faixa?Math.round(base*faixa.percentual/100):0;
+  let acumulado=0,distribuido=0;for(const l of elegiveis){acumulado+=l.subtotal;const meta=base?Math.round(desconto*acumulado/base):0;l.desconto=meta-distribuido;distribuido=meta;}
+  for(const l of linhas)l.total=l.subtotal-l.desconto;
+  const subtotal=linhas.reduce((n,l)=>n+l.subtotal,0);return{linhas,unidades,percentual:faixa?.percentual||0,subtotal,desconto,total:subtotal-desconto};
+ }
+ return{ativo,opcoes,calcular,centavos};
+})();
+
+</script>
 </head>
 <body>
 
@@ -365,8 +383,11 @@ async function saveProduct(){
 }
 
 async function editProduct(id){
+  const status=document.getElementById('statusMsg');
+  try {
+  status.textContent='Abrindo produto...';
   const doc = await db.collection('site_produtos').doc(id).get();
-  if(!doc.exists) return;
+  if(!doc.exists) throw new Error('Este produto não foi encontrado. Atualize a lista.');
   const p = doc.data();
   carregarKit(p);
   editingId = id;
@@ -387,6 +408,7 @@ async function editProduct(id){
   document.getElementById('cancelBtn').style.display = 'inline-block';
   document.getElementById('statusMsg').textContent = '';
   window.scrollTo({top:0, behavior:'smooth'});
+  }catch(e){console.error('Falha ao editar produto:',e);status.className='err';status.textContent='Não foi possível abrir o produto: '+(e.code||'')+' '+e.message;alert(status.textContent);}
 }
 
 async function deleteProduct(id){
@@ -416,6 +438,43 @@ function resetForm(){
   document.getElementById('cancelBtn').style.display = 'none';
 }
 </script>
-<script src="kits-admin.js"></script>
+<script>
+// Opções e regras por anúncio, preenchidas pelo administrador.
+const painelKit=document.createElement('section');painelKit.style.cssText='margin:20px 0;padding:18px;border:1px solid #ddd;border-radius:12px';
+painelKit.innerHTML=`<h3>Opções do anúncio e desconto por quantidade</h3><label><input type="checkbox" id="kitAtivo" style="width:auto" onchange="document.getElementById('kitCampos').hidden=!this.checked"> Permitir escolher várias opções neste anúncio</label><div id="kitCampos" hidden><p>Para o catálogo de peças. Cada opção tem seu preço. Marque quais opções contam para o desconto e também o recebem. As quantidades podem ser misturadas no mesmo anúncio.</p><div id="kitOpcoes"></div><button type="button" class="btn btn-ghost" onclick="addOpcaoKit()">+ Adicionar opção</button><button type="button" class="btn btn-ghost" onclick="exemploNatal()">Preencher exemplo natalino</button><h4>Faixas de desconto</h4><p>O site aplica uma única faixa: a de maior quantidade atingida. A bandeja pode ficar fora de todas as faixas.</p><div id="kitFaixas"></div><button type="button" class="btn btn-ghost" onclick="addFaixaKit()">+ Adicionar faixa</button><p>O preço normal do anúncio vira apenas referência interna. Na vitrine, aparecem os preços de cada opção. Promoção geral e seleção de cores não se combinam com opções.</p></div>`;
+document.getElementById('saveBtn').parentElement.before(painelKit);
+function addOpcaoKit(o={}){
+ const row=document.createElement('div');row.className='kit-opcao';row.dataset.id=o.id||crypto.randomUUID();row.dataset.img=o.img||'';row.style.cssText='display:flex;gap:12px;flex-wrap:wrap;margin:16px 0;padding:14px;border:1px solid #ddd;border-radius:10px';
+ row.innerHTML='<label>Nome da opção<input class="kit-nome" maxlength="100" placeholder="Ex.: Rena"></label><label>Preço unitário (R$)<input class="kit-preco" type="number" min="0.01" step=".01"></label><label>Participa do desconto <input class="kit-participa" type="checkbox" style="width:auto"></label><label>Foto desta variação<input class="kit-foto" type="file" accept="image/*"><small>Opcional · até 10 MB. Se não escolher outra, a foto atual será mantida.</small></label><div><img class="kit-preview" alt="Prévia da foto da variação" style="width:90px;height:90px;object-fit:contain;border:1px solid #ddd;border-radius:8px;display:none"><button type="button" class="btn btn-ghost kit-remover-foto">Remover foto</button></div><button type="button" class="btn btn-ghost kit-remover-opcao">Remover opção</button>';
+ row.querySelector('.kit-nome').value=o.nome||'';row.querySelector('.kit-preco').value=o.preco??'';row.querySelector('.kit-participa').checked=o.participaDesconto!==false;
+ const preview=row.querySelector('.kit-preview'),input=row.querySelector('.kit-foto');
+ if(o.img){preview.src=o.img;preview.style.display='block';}
+ input.onchange=()=>{const file=input.files[0];if(!file){preview.src=row.dataset.img;preview.style.display=row.dataset.img?'block':'none';return;}if(!file.type.startsWith('image/')||file.size>10*1024*1024){alert('Escolha uma imagem de até 10 MB.');input.value='';preview.src=row.dataset.img;preview.style.display=row.dataset.img?'block':'none';return;}const reader=new FileReader();reader.onload=()=>{preview.src=reader.result;preview.style.display='block';};reader.readAsDataURL(file);};
+ row.querySelector('.kit-remover-foto').onclick=()=>{row.dataset.img='';input.value='';preview.removeAttribute('src');preview.style.display='none';};
+ row.querySelector('.kit-remover-opcao').onclick=()=>row.remove();document.getElementById('kitOpcoes').append(row);
+}
+async function enviarFotosKit(kit){
+ const tarefas=kit.opcoes.map(o=>{const row=[...document.querySelectorAll('.kit-opcao')].find(r=>r.dataset.id===o.id);return{o,row,file:row?.querySelector('.kit-foto').files[0]};});
+ for(const {o,row,file} of tarefas){if(!file)continue;if(!file.type.startsWith('image/')||file.size>10*1024*1024)throw Error('Foto da opção '+o.nome+': escolha uma imagem de até 10 MB.');document.getElementById('statusMsg').textContent='Enviando foto: '+o.nome+'...';const ref=storage.ref().child('site_produtos/variacoes/'+crypto.randomUUID());await ref.put(file,{contentType:file.type});o.img=await ref.getDownloadURL();if(row?.isConnected){row.dataset.img=o.img;row.querySelector('.kit-foto').value='';}}
+ return kit;
+}
+function addFaixaKit(f={}){const row=document.createElement('div');row.className='kit-faixa';row.style.cssText='display:flex;gap:10px;flex-wrap:wrap;margin:12px 0';row.innerHTML='<label>A partir de quantas unidades?<input class="kit-minimo" type="number" min="2" step="1"></label><label>Desconto (%)<input class="kit-percentual" type="number" min="0.01" max="99.99" step=".01"></label><button type="button" class="btn btn-ghost">Remover faixa</button>';row.querySelector('.kit-minimo').value=f.minimo??'';row.querySelector('.kit-percentual').value=f.percentual??'';row.querySelector('button').onclick=()=>row.remove();document.getElementById('kitFaixas').append(row);}
+function carregarKit(p={}){document.getElementById('kitOpcoes').replaceChildren();document.getElementById('kitFaixas').replaceChildren();document.getElementById('kitAtivo').checked=Kits.ativo(p);document.getElementById('kitCampos').hidden=!Kits.ativo(p);Kits.opcoes(p).forEach(addOpcaoKit);(p.faixasDesconto||[]).forEach(addFaixaKit);}
+function coletarKit(){
+ if(!document.getElementById('kitAtivo').checked)return{opcoes:[],faixasDesconto:[]};
+ const publico=document.getElementById('fPublico').value||publicoProduto({name:document.getElementById('fName').value,cat:document.getElementById('fCat').value});
+ if(publico!=='clientes')throw Error('Anúncios com opções devem ser destinados a Clientes — catálogo de peças.');
+ if(document.getElementById('fPromo').value.trim())throw Error('Para usar opções, limpe o preço promocional geral. Use as faixas de desconto.');
+ const opcoes=[...document.querySelectorAll('.kit-opcao')].map(row=>({id:row.dataset.id,img:row.dataset.img||'',nome:row.querySelector('.kit-nome').value.trim(),preco:Number(row.querySelector('.kit-preco').value),participaDesconto:row.querySelector('.kit-participa').checked}));
+ if(!opcoes.length||opcoes.some(o=>!o.nome||!Number.isFinite(o.preco)||o.preco<=0))throw Error('Preencha nome e preço positivo em todas as opções.');
+ if(new Set(opcoes.map(o=>o.nome.toLocaleLowerCase('pt-BR'))).size!==opcoes.length)throw Error('Use nomes diferentes para cada opção.');
+ const faixasDesconto=[...document.querySelectorAll('.kit-faixa')].map(row=>({minimo:Number(row.querySelector('.kit-minimo').value),percentual:Number(row.querySelector('.kit-percentual').value)})).sort((a,b)=>a.minimo-b.minimo);
+ if(faixasDesconto.some((f,i)=>!Number.isInteger(f.minimo)||f.minimo<2||!Number.isFinite(f.percentual)||f.percentual<=0||f.percentual>=100||(i>0&&(f.minimo===faixasDesconto[i-1].minimo||f.percentual<=faixasDesconto[i-1].percentual))))throw Error('Use faixas com quantidades inteiras a partir de 2 e descontos crescentes entre 0 e 100%.');
+ if(faixasDesconto.length&&!opcoes.some(o=>o.participaDesconto))throw Error('Marque pelo menos uma opção para participar do desconto.');
+ return{opcoes,faixasDesconto};
+}
+function exemploNatal(){if(document.querySelectorAll('.kit-opcao').length&&!confirm('Substituir as opções deste formulário pelo exemplo com preços fictícios?'))return;carregarKit({opcoes:[['Rena',12],['Papai Noel',15],['Árvore de Natal',14],['Boneco de neve',12],['Biscoito',10],['Bandeja',25]].map(([nome,preco],i)=>({id:crypto.randomUUID(),nome,preco,participaDesconto:i!==5})),faixasDesconto:[{minimo:5,percentual:10}]});document.getElementById('fPublico').value='clientes';document.getElementById('fPromo').value='';document.getElementById('statusMsg').textContent='Exemplo preenchido com preços fictícios. Confira antes de salvar.';}
+
+</script>
 </body>
 </html>
