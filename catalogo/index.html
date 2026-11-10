@@ -165,7 +165,25 @@
   button:focus-visible,a:focus-visible{outline:3px solid #225bb0;outline-offset:3px;}
 
 </style>
-<script src="../kits-core.js"></script>
+<script>
+/* Preços calculados em centavos; faixas não se acumulam. */
+const Kits = (()=>{
+ const centavos=n=>Math.round((Number(n)+Number.EPSILON)*100);
+ function opcoes(p){return Array.isArray(p.opcoes)?p.opcoes:[];}
+ function ativo(p){return opcoes(p).length>0;}
+ function calcular(p,quantidades){
+  const linhas=opcoes(p).map(o=>{const qtd=Number(quantidades[o.id]||0);if(!Number.isSafeInteger(qtd)||qtd<0||qtd>999)throw Error('Use quantidades inteiras entre 0 e 999.');const preco=centavos(o.preco);if(!Number.isSafeInteger(preco)||preco<0)throw Error('Preço inválido.');return{...o,qtd,subtotal:preco*qtd,desconto:0};});
+  const elegiveis=linhas.filter(l=>l.participaDesconto!==false),unidades=elegiveis.reduce((n,l)=>n+l.qtd,0);
+  const faixa=(p.faixasDesconto||[]).filter(f=>Number.isInteger(f.minimo)&&f.minimo>=2&&f.percentual>0&&f.percentual<100&&unidades>=f.minimo).sort((a,b)=>b.minimo-a.minimo)[0];
+  const base=elegiveis.reduce((n,l)=>n+l.subtotal,0),desconto=faixa?Math.round(base*faixa.percentual/100):0;
+  let acumulado=0,distribuido=0;for(const l of elegiveis){acumulado+=l.subtotal;const meta=base?Math.round(desconto*acumulado/base):0;l.desconto=meta-distribuido;distribuido=meta;}
+  for(const l of linhas)l.total=l.subtotal-l.desconto;
+  const subtotal=linhas.reduce((n,l)=>n+l.subtotal,0);return{linhas,unidades,percentual:faixa?.percentual||0,subtotal,desconto,total:subtotal-desconto};
+ }
+ return{ativo,opcoes,calcular,centavos};
+})();
+
+</script>
 </head>
 <body>
 
@@ -526,6 +544,51 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 </script>
 
-<script src="kits-catalogo.js"></script>
+<script>
+const kitSelecao=Object.create(null);
+function detalhesKit(p){const valores=kitSelecao[p.id]||(kitSelecao[p.id]={});const r=Kits.calcular(p,valores);return `<article class="card" data-product="${esc(p.id)}"><div class="card-img">${imagemKit(p)}</div><div class="card-body"><h3>${esc(p.name)}</h3><p class="desc">${esc(p.desc)}</p>${galeriaKit(p)}<p>Escolha a quantidade de cada opção.</p>${Kits.opcoes(p).map(o=>`<div style="padding:10px 0;border-bottom:1px solid #eee">${o.img?`<button type="button" data-kit-foto="${esc(o.id)}" aria-label="Ver foto de ${esc(o.nome)}" style="border:1px solid #ddd;border-radius:8px;padding:0;background:white;cursor:pointer"><img src="${esc(o.img)}" alt="${esc(o.nome)}" style="width:64px;height:64px;object-fit:contain"></button> `:''}<button type="button" data-kit-foto="${esc(o.id)}" style="font:inherit;font-weight:700;border:0;background:none;cursor:pointer">${esc(o.nome)}</button> · ${money(o.preco)}${o.participaDesconto===false?'<small style="display:block">Fora do desconto por quantidade</small>':''}<div class="qty-row"><button type="button" data-kit-produto="${esc(p.id)}" data-kit-opcao="${esc(o.id)}" data-kit-delta="-1" aria-label="Diminuir ${esc(o.nome)}">−</button><input style="width:60px;text-align:center" type="number" min="0" max="999" step="1" value="${valores[o.id]||0}" data-kit-produto="${esc(p.id)}" data-kit-opcao="${esc(o.id)}" aria-label="Quantidade de ${esc(o.nome)}"><button type="button" data-kit-produto="${esc(p.id)}" data-kit-opcao="${esc(o.id)}" data-kit-delta="1" aria-label="Aumentar ${esc(o.nome)}">+</button></div></div>`).join('')}<p style="font-size:13px;color:#297448">${(p.faixasDesconto||[]).map(f=>`${f.minimo}+ unidades: ${f.percentual}% de desconto`).join(' · ')}${p.faixasDesconto?.length?'<br>Pode misturar as opções participantes deste anúncio.':''}</p><div aria-live="polite"><p>Subtotal: ${money(r.subtotal/100)}<br>Desconto: − ${money(r.desconto/100)}<br><strong>Total da seleção: ${money(r.total/100)}</strong></p></div><button class="add-btn" type="button" data-kit-adicionar="${esc(p.id)}" ${!r.subtotal?'disabled':''}>Adicionar seleção ao pedido</button></div></article>`;}
+
+function cardKit(p){
+ const minimo=Math.min(...Kits.opcoes(p).map(o=>Number(o.preco)));
+ return '<article class="card" data-product="'+esc(p.id)+'"><button type="button" data-kit-ver="'+esc(p.id)+'" aria-label="Ver '+esc(p.name)+'" class="card-img" style="width:100%;padding:0;border:0;cursor:pointer">'+(p.img?'<img src="'+esc(p.img)+'" alt="'+esc(p.name)+'" loading="lazy">':esc(p.icon||'🎁'))+'</button><div class="card-body"><h3><button type="button" data-kit-ver="'+esc(p.id)+'" style="padding:0;border:0;background:none;font:inherit;text-align:left;cursor:pointer">'+esc(p.name)+'</button></h3><p class="desc">'+esc(p.desc)+'</p><div class="card-foot"><span class="price">A partir de '+money(minimo)+'</span></div><button type="button" class="add-btn" data-kit-ver="'+esc(p.id)+'">Ver produto</button></div></article>';
+}
+
+const kitFotoSelecionada=Object.create(null);
+function fotosKit(p){return [...(p.img?[{id:'__principal__',nome:p.name,img:p.img}]:[]),...Kits.opcoes(p).filter(o=>o.img).map(o=>({id:o.id,nome:o.nome,img:o.img}))];}
+function imagemKit(p){const fotos=fotosKit(p),foto=fotos.find(f=>f.id===kitFotoSelecionada[p.id])||fotos[0];return foto?'<img id="kit-foto-principal" src="'+esc(foto.img)+'" alt="'+esc(foto.nome)+'">':'<span style="font-size:16px">Foto não cadastrada</span>';}
+function galeriaKit(p){const fotos=fotosKit(p);return fotos.length?'<div style="display:flex;gap:8px;overflow-x:auto;padding:10px 0" aria-label="Fotos do produto e das variações">'+fotos.map(f=>'<button type="button" data-kit-foto="'+esc(f.id)+'" aria-label="Ver '+esc(f.nome)+'" aria-pressed="'+(f.id===(kitFotoSelecionada[p.id]||fotos[0].id))+'" style="flex-shrink:0;border:1px solid #ccc;background:white;border-radius:8px;padding:4px;cursor:pointer"><img src="'+esc(f.img)+'" alt="'+esc(f.nome)+'" style="width:64px;height:64px;object-fit:contain"><small style="display:block">'+esc(f.id==='__principal__'?'Principal':f.nome)+'</small></button>').join('')+'</div>':'';}
+function selecionarFotoKit(id){const p=products.find(p=>p.id===kitAbertoId);if(!p)return;if(!fotosKit(p).some(f=>f.id===id))return;kitFotoSelecionada[p.id]=id;renderDetalhesKit();}
+
+let kitAbertoId=null;
+function abrirKit(id){
+ const p=products.find(p=>p.id===id);if(!p||!Kits.ativo(p))return;
+ let modal=document.getElementById('kit-detalhes');
+ if(!modal){modal=document.createElement('dialog');modal.id='kit-detalhes';modal.setAttribute('aria-label','Detalhes e opções do produto');modal.style.cssText='width:min(640px,calc(100vw - 24px));max-height:90vh;padding:0;border:1px solid #ddd;border-radius:16px;color:inherit';document.body.append(modal);const css=document.createElement('style');css.textContent='#kit-detalhes::backdrop{background:rgba(0,0,0,.55)}#kit-detalhes .card{border:0;box-shadow:none}#kit-detalhes .card-img{max-height:270px;aspect-ratio:auto;min-height:120px}#kit-detalhes .card-img img{max-height:270px;object-fit:contain}#kit-detalhes .card-body{padding:22px}#kit-detalhes .qty-row input{font:inherit;padding:7px;border:1px solid #ddd;border-radius:6px}';document.head.append(css);modal.addEventListener('close',()=>{kitAbertoId=null;});modal.addEventListener('click',e=>{if(e.target===modal){const r=modal.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)fecharKit();}});}
+ kitAbertoId=id;kitFotoSelecionada[id]=fotosKit(p)[0]?.id;renderDetalhesKit();if(!modal.open)modal.showModal();
+}
+function renderDetalhesKit(){const modal=document.getElementById('kit-detalhes'),p=products.find(p=>p.id===kitAbertoId);if(!modal||!p)return;const scroll=modal.scrollTop;modal.innerHTML='<div style="position:sticky;top:0;background:white;padding:10px 16px;z-index:1;display:flex;justify-content:space-between;align-items:center"><strong>Detalhes do produto</strong><button type="button" data-kit-fechar style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer">Voltar à vitrine ✕</button></div>'+detalhesKit(p);modal.scrollTop=scroll;}
+function fecharKit(){const modal=document.getElementById('kit-detalhes');if(modal?.open)modal.close();kitAbertoId=null;}
+
+function alterarOpcaoKit(id,opcao,qtd){const p=products.find(p=>p.id===id);if(!p||!Kits.opcoes(p).some(o=>o.id===opcao))return;if(!Number.isSafeInteger(qtd)||qtd<0||qtd>999){alert('Use uma quantidade inteira entre 0 e 999.');renderDetalhesKit();return;}(kitSelecao[id]||(kitSelecao[id]={}))[opcao]=qtd;renderDetalhesKit();const card=document.getElementById('kit-detalhes');card?.querySelectorAll('input[data-kit-opcao]').forEach(i=>{if(i.dataset.kitOpcao===opcao)i.focus();});}
+function adicionarKit(id){const p=products.find(p=>p.id===id);if(!p)return;const valores=kitSelecao[id]||{};if(!Kits.calcular(p,valores).subtotal)return;const q={};Kits.opcoes(p).forEach(o=>q[o.id]=(cart[JSON.stringify(['kit',id,o.id])]?.qty||0)+(valores[o.id]||0));if(Object.values(q).some(n=>n>999)){alert('Máximo de 999 unidades por opção neste pedido.');return;}Kits.opcoes(p).forEach(o=>{const key=JSON.stringify(['kit',id,o.id]);if(q[o.id])cart[key]={id:p.id,key,name:p.name,opcaoId:o.id,opcaoNome:o.nome,price:o.preco,qty:q[o.id],kit:true};});kitSelecao[id]={};renderGrid();updateCartUI();fecharKit();openCart();}
+function linhasPedido(){const linhas=[],grupos=new Map();for(const item of Object.values(cart)){if(item.kit){if(!grupos.has(item.id))grupos.set(item.id,[]);grupos.get(item.id).push(item);}else linhas.push({...item,subtotal:Kits.centavos(item.price)*item.qty,desconto:0,total:Kits.centavos(item.price)*item.qty});}
+ for(const [id,itens] of grupos){const p=products.find(p=>p.id===id);if(!p)continue;const q=Object.fromEntries(itens.map(i=>[i.opcaoId,i.qty]));const r=Kits.calcular(p,q);for(const l of r.linhas.filter(l=>l.qtd>0)){const i=itens.find(i=>i.opcaoId===l.id);linhas.push({...i,subtotal:l.subtotal,desconto:l.desconto,total:l.total,percentual:r.percentual});}}
+ return linhas;
+}
+const alterarQuantidadeBase=cartQtyChange;
+cartQtyChange=function(key,delta){const i=cart[key];if(!i?.kit){alterarQuantidadeBase(key,delta);return;}if(i.qty+delta>999)return;i.qty+=delta;if(i.qty<=0)delete cart[key];updateCartUI();};
+updateCartUI=function(){const linhas=linhasPedido(),total=linhas.reduce((n,l)=>n+l.total,0),desconto=linhas.reduce((n,l)=>n+l.desconto,0);document.getElementById('cartCount').textContent=linhas.reduce((n,l)=>n+l.qty,0);document.getElementById('cartTotal').textContent=money(total/100);document.getElementById('drawerBody').innerHTML=linhas.length?linhas.map(i=>`<div class="drawer-item"><div><div class="di-name">${esc(i.name)}${i.kit?' — '+esc(i.opcaoNome):''}</div>${i.colorName?`<div class="di-meta">Cor: ${esc(i.colorName)}</div>`:''}<div class="di-meta">${money(i.price)} × ${i.qty} = ${money(i.subtotal/100)}${i.desconto?`<br>Desconto por quantidade (${i.percentual}%): − ${money(i.desconto/100)}<br>Total: ${money(i.total/100)}`:''}</div></div><div style="display:flex;align-items:center;gap:6px"><button type="button" onclick="cartQtyChange(${arg(i.key)},-1)" aria-label="Diminuir quantidade">−</button><span>${i.qty}</span><button type="button" onclick="cartQtyChange(${arg(i.key)},1)" aria-label="Aumentar quantidade">+</button><button type="button" onclick="removeFromCart(${arg(i.key)})" aria-label="Remover item">✕</button></div></div>`).join('')+(desconto?`<p>Você economiza ${money(desconto/100)} neste pedido.</p>`:''):'<p>Seu carrinho está vazio.</p>';};
+sendOrder=function(){const linhas=linhasPedido();if(!linhas.length){alert('Adicione ao menos um produto.');return;}const total=linhas.reduce((n,l)=>n+l.total,0),desconto=linhas.reduce((n,l)=>n+l.desconto,0);const msg=['Olá! Gostaria de fazer um pedido:','',...linhas.map(i=>`${i.qty}x ${i.name}${i.kit?' — '+i.opcaoNome:''}${i.colorName?' — Cor: '+i.colorName:''}: ${money(i.total/100)}${i.desconto?' (desconto '+money(i.desconto/100)+')':''}`),'',`Desconto total: ${money(desconto/100)}`,`Total: ${money(total/100)}`,fulfil==='retirar'?'Retirada':'Entrega',document.getElementById('custName').value||'(nome não informado)',document.getElementById('custWhats').value||'(WhatsApp não informado)',document.getElementById('custObs').value||''].join('\n');if(new URLSearchParams(location.search).get('demo')==='kit'){alert('PRÉVIA DE TESTE — não enviada\n\n'+msg);return;}window.open('https://wa.me/5598991019019?text='+encodeURIComponent(msg),'_blank');try{if(typeof gtag==='function')gtag('event','conversion',{'send_to':'AW-18399189932/tXubCOGTgPQcEKy3tcVE','value':1,'currency':'BRL'});}catch(e){console.warn('Medição indisponível.');}};
+document.addEventListener('click',e=>{const b=e.target.closest?.('button');if(!b)return;if(b.hasAttribute('data-kit-foto')){selecionarFotoKit(b.dataset.kitFoto);return;}if(b.hasAttribute('data-kit-ver')){abrirKit(b.dataset.kitVer);return;}if(b.hasAttribute('data-kit-fechar')){fecharKit();return;}if(b.hasAttribute('data-kit-adicionar'))adicionarKit(b.dataset.kitAdicionar);else if(b.hasAttribute('data-kit-delta')){const {kitProduto:id,kitOpcao:opcao,kitDelta:delta}=b.dataset;alterarOpcaoKit(id,opcao,((kitSelecao[id]||{})[opcao]||0)+Number(delta));}});
+document.addEventListener('change',e=>{if(e.target.matches('input[data-kit-opcao]'))alterarOpcaoKit(e.target.dataset.kitProduto,e.target.dataset.kitOpcao,Number(e.target.value));});
+document.addEventListener('DOMContentLoaded',()=>{
+ if(new URLSearchParams(location.search).get('demo')!=='kit')return;
+ const p=products[0];if(!p)return;
+ const painel=document.createElement('section');painel.style.cssText='background:#fff4d4;border:1px solid #e0cf9f;border-radius:12px;padding:18px;margin:20px 0';painel.innerHTML='<h3>Teste suas próprias fotos</h3><p>Escolha uma foto principal e uma para cada variação. Neste teste, as imagens ficam apenas nesta página e não são enviadas nem salvas no site.</p>';
+ for(const op of [{id:'__principal__',nome:'Foto principal'},...Kits.opcoes(p)]){const label=document.createElement('label');label.textContent=op.nome+' ';label.style.cssText='display:block;margin:12px 0';const input=document.createElement('input');input.type='file';input.accept='image/*';input.onchange=()=>{const file=input.files[0];if(!file)return;if(!file.type.startsWith('image/')||file.size>10*1024*1024){alert('Escolha uma imagem de até 10 MB.');input.value='';return;}const r=new FileReader();r.onload=()=>{if(op.id==='__principal__')p.img=r.result;else Kits.opcoes(p).find(o=>o.id===op.id).img=r.result;renderGrid();if(kitAbertoId===p.id)renderDetalhesKit();};r.readAsDataURL(file);};label.append(input);painel.append(label);}
+ document.getElementById('produtos').prepend(painel);
+});
+
+</script>
 </body>
 </html>
