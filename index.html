@@ -164,6 +164,8 @@
   .notify-help{font-size:12px;margin:6px 0 0;}
   button:focus-visible,a:focus-visible{outline:3px solid #225bb0;outline-offset:3px;}
 
+
+[hidden]{display:none!important}.pagina-produto{grid-template-columns:minmax(0,760px);justify-content:center}.pagina-produto .card-img img{object-fit:contain}.card-body h3 a{color:inherit}
 </style>
 </head>
 <body>
@@ -310,6 +312,7 @@ async function loadProducts(){
   }
 }
 async function init(){
+  try{cart=JSON.parse(sessionStorage.getItem(cartStorageKey()))||{};}catch{}
   const grid = document.getElementById('grid');
   grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:40px 0;">Carregando produtos...</p>';
   await Promise.all([loadCategories(), loadProducts()]);
@@ -322,7 +325,7 @@ async function init(){
   }
   renderTabs();
   renderOfferBanner();
-  if(!products.length){
+  if(!products.length&&!idProdutoAberto){
     grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-dim);">Nosso catálogo está sendo preparado. Fale conosco pelo WhatsApp para consultar opções.</p>';
   }else{
     renderGrid();
@@ -381,27 +384,40 @@ function selectColor(id,colorId){
   const card=[...document.querySelectorAll('[data-product]')].find(el=>el.dataset.product===id);
   card?.querySelector('[aria-pressed="true"]')?.focus();
 }
-function verDescricao(id){
-  const produto=products.find(p=>p.id===id);
-  if(!produto)return;
-  const dialog=document.createElement('dialog');
-  dialog.setAttribute('aria-label',produto.name);
-  dialog.style.cssText='width:min(540px,calc(100vw - 32px));border:1px solid #ddd;border-radius:16px;padding:24px';
-  dialog.innerHTML='<form method="dialog"><button class="btn btn-secondary">Voltar à vitrine</button></form><h2>'+esc(produto.name)+'</h2>';
-  if(produto.desc){
-    const descricao=document.createElement('p');
-    descricao.style.whiteSpace='pre-wrap';
-    descricao.textContent=produto.desc;
-    dialog.append(descricao);
-  }
-  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
-  document.body.append(dialog);
-  dialog.showModal();
+const parametrosProduto=new URLSearchParams(location.search);
+const idProdutoAberto=parametrosProduto.get('produto');
+const parametrosVitrine=new URLSearchParams(parametrosProduto);
+parametrosVitrine.delete('produto');
+const vitrineUrl='index.html'+(parametrosVitrine.size?'?'+parametrosVitrine:'');
+function cartStorageKey(){return 'vinius-carrinho:'+PUBLICO_ATUAL+':'+(parametrosProduto.get('demo')||'loja');}
+function salvarCarrinho(){try{sessionStorage.setItem(cartStorageKey(),JSON.stringify(cart));}catch{}}
+function cartaoVitrine(p){
+  const url=new URL(vitrineUrl,location.href);
+  url.searchParams.set('produto',p.id);
+  const preco=money(precoVenda(p));
+  return `<article class="card"><a class="card-img" href="${esc(url.href)}" aria-label="Ver ${esc(p.name)}">${p.img?`<img src="${esc(p.img)}" alt="${esc(p.name)}" loading="lazy">`:esc(p.icon||'📦')}</a><div class="card-body"><h3><a href="${esc(url.href)}">${esc(p.name)}</a></h3><div class="card-foot"><span class="price">${preco}</span></div><a class="btn btn-secondary" href="${esc(url.href)}">Ver produto</a></div></article>`;
+}
+function prepararPaginaProduto(produto){
+  document.querySelectorAll('.hero,.offer-banner,#peca,#sobre,#contato').forEach(el=>el.hidden=true);
+  document.querySelectorAll('header a[href^="#"]').forEach(link=>{link.href=vitrineUrl+link.getAttribute('href');});
+  document.getElementById('tabs').hidden=true;
+  const cabecalho=document.querySelector('#produtos .section-head');
+  if(cabecalho)cabecalho.innerHTML='<a href="'+esc(vitrineUrl)+'">← Voltar à vitrine</a>';
+  if(produto)document.title=produto.name+' | Vinius 3D';
+  let recomendacoes=document.getElementById('recomendacoes');
+  if(!recomendacoes){recomendacoes=document.createElement('div');recomendacoes.id='recomendacoes';document.getElementById('grid').after(recomendacoes);}
+  const outros=products.filter(p=>p.id!==idProdutoAberto).sort((a,b)=>Number(b.cat===produto?.cat)-Number(a.cat===produto?.cat)).slice(0,4);
+  recomendacoes.innerHTML=outros.length?'<h2 style="margin:36px 0 16px">Você também pode gostar</h2><div class="grid">'+outros.map(cartaoVitrine).join('')+'</div>':'';
 }
 function renderGrid(){
   const grid=document.getElementById('grid');
   const list=activeCat==='todos'?products:products.filter(p=>p.cat===activeCat);
-  grid.innerHTML=list.map(p=>{
+  if(!idProdutoAberto){grid.innerHTML=list.map(cartaoVitrine).join('')||'<p>Nenhum produto nesta categoria.</p>';return;}
+  const produto=products.find(p=>p.id===idProdutoAberto);
+  prepararPaginaProduto(produto);
+  grid.classList.add('pagina-produto');
+  if(!produto){grid.innerHTML='<p>Produto indisponível.</p>';return;}
+  grid.innerHTML=[produto].map(p=>{
     qtyDraft[p.id]=qtyDraft[p.id]||1;
     const colors=colorsOf(p), color=colorFor(p), needsColor=colors.length>0;
     const unconfigured=isFilament(p)&&!needsColor;
@@ -409,7 +425,7 @@ function renderGrid(){
     const canAdd=!unconfigured&&(!needsColor||color&&color.stock>0);
     return `<div class="card" data-product="${esc(p.id)}">
       <div class="card-img">${p.img?`<img src="${esc(p.img)}" alt="${esc(p.name)}" loading="lazy">`:esc(p.icon||'📦')}</div>
-      <div class="card-body"><h3>${esc(p.name)}</h3><button type="button" class="btn btn-secondary" onclick="verDescricao(${arg(p.id)})">Ver produto</button>
+      <div class="card-body"><h3>${esc(p.name)}</h3><p class="desc">${esc(p.desc)}</p>
       <div class="card-foot"><div>${temPromocao(p)?`<span style="display:block;font-size:12px;font-weight:700;color:#9c321a">Em promoção</span><del style="color:#6b6f6c;font-size:13px">${money(p.price)}</del> `:''}<span class="price">${money(precoVenda(p))}</span></div></div>
       ${needsColor?`<fieldset class="color-field"><legend>Escolha a cor</legend><div class="color-options">${colors.map(c=>`<button type="button" class="color-option ${c.stock===0?'sold-out':''}" aria-pressed="${color?.id===c.id}" onclick="selectColor(${arg(p.id)},${arg(c.id)})"><span class="swatch" style="background:${c.hex}" aria-hidden="true"></span><span>${esc(c.name)}<small>${c.stock>0?'Disponível':'Fora de estoque'}</small></span></button>`).join('')}</div></fieldset>
       <p class="stock-note ${unavailable?'unavailable':''}" role="status">${color?`${esc(color.name)} · ${unavailable?'Fora de estoque':color.stock+' disponível(is)'}`:'Selecione uma cor para continuar.'}</p>`:''}
@@ -444,6 +460,7 @@ function cartQtyChange(key,delta){
   item.qty+=delta;if(item.qty<=0)delete cart[key];updateCartUI();
 }
 function updateCartUI(){
+  salvarCarrinho();
   const items=Object.values(cart),total=items.reduce((s,i)=>s+i.qty*i.price,0);
   document.getElementById('cartCount').textContent=items.reduce((s,i)=>s+i.qty,0);
   document.getElementById('cartTotal').textContent=money(total);
