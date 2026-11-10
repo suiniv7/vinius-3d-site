@@ -325,7 +325,7 @@ async function saveProduct(){
   const precoPromocional = promoRaw === '' ? null : Number(promoRaw);
   const desc = document.getElementById('fDesc').value.trim();
   const icon = document.getElementById('fIcon').value.trim();
-  const file = document.getElementById('fPhoto').files[0];
+  const file = fotoParaEnviar(document.getElementById('fPhoto'));
   const status = document.getElementById('statusMsg');
   const saveBtn = document.getElementById('saveBtn');
 
@@ -403,7 +403,7 @@ async function editProduct(id){
   document.getElementById('fPromo').value = p.precoPromocional ?? '';
   document.getElementById('fDesc').value = p.desc || '';
   document.getElementById('fIcon').value = p.icon || '';
-  document.getElementById('fPhoto').value = '';
+  limparSeletorFoto(document.getElementById('fPhoto'));
   document.getElementById('saveBtn').textContent = 'Salvar alterações';
   document.getElementById('cancelBtn').style.display = 'inline-block';
   document.getElementById('statusMsg').textContent = '';
@@ -433,7 +433,7 @@ function resetForm(){
   document.getElementById('fPromo').value = '';
   document.getElementById('fDesc').value = '';
   document.getElementById('fIcon').value = '';
-  document.getElementById('fPhoto').value = '';
+  limparSeletorFoto(document.getElementById('fPhoto'));
   document.getElementById('saveBtn').textContent = 'Adicionar produto';
   document.getElementById('cancelBtn').style.display = 'none';
 }
@@ -450,12 +450,12 @@ function addOpcaoKit(o={}){
  const preview=row.querySelector('.kit-preview'),input=row.querySelector('.kit-foto');
  if(o.img){preview.src=o.img;preview.style.display='block';}
  input.onchange=()=>{const file=input.files[0];if(!file){preview.src=row.dataset.img;preview.style.display=row.dataset.img?'block':'none';return;}if(!file.type.startsWith('image/')||file.size>10*1024*1024){alert('Escolha uma imagem de até 10 MB.');input.value='';preview.src=row.dataset.img;preview.style.display=row.dataset.img?'block':'none';return;}const reader=new FileReader();reader.onload=()=>{preview.src=reader.result;preview.style.display='block';};reader.readAsDataURL(file);};
- row.querySelector('.kit-remover-foto').onclick=()=>{row.dataset.img='';input.value='';preview.removeAttribute('src');preview.style.display='none';};
+ row.querySelector('.kit-remover-foto').onclick=()=>{row.dataset.img='';limparSeletorFoto(input);preview.removeAttribute('src');preview.style.display='none';};
  row.querySelector('.kit-remover-opcao').onclick=()=>row.remove();document.getElementById('kitOpcoes').append(row);
 }
 async function enviarFotosKit(kit){
- const tarefas=kit.opcoes.map(o=>{const row=[...document.querySelectorAll('.kit-opcao')].find(r=>r.dataset.id===o.id);return{o,row,file:row?.querySelector('.kit-foto').files[0]};});
- for(const {o,row,file} of tarefas){if(!file)continue;if(!file.type.startsWith('image/')||file.size>10*1024*1024)throw Error('Foto da opção '+o.nome+': escolha uma imagem de até 10 MB.');document.getElementById('statusMsg').textContent='Enviando foto: '+o.nome+'...';const ref=storage.ref().child('site_produtos/variacoes/'+crypto.randomUUID());await ref.put(file,{contentType:file.type});o.img=await ref.getDownloadURL();if(row?.isConnected){row.dataset.img=o.img;row.querySelector('.kit-foto').value='';}}
+ const tarefas=kit.opcoes.map(o=>{const row=[...document.querySelectorAll('.kit-opcao')].find(r=>r.dataset.id===o.id);return{o,row,file:fotoParaEnviar(row?.querySelector('.kit-foto'))};});
+ for(const {o,row,file} of tarefas){if(!file)continue;if(!file.type.startsWith('image/')||file.size>10*1024*1024)throw Error('Foto da opção '+o.nome+': escolha uma imagem de até 10 MB.');document.getElementById('statusMsg').textContent='Enviando foto: '+o.nome+'...';const ref=storage.ref().child('site_produtos/variacoes/'+crypto.randomUUID());await ref.put(file,{contentType:file.type});o.img=await ref.getDownloadURL();if(row?.isConnected){row.dataset.img=o.img;limparSeletorFoto(row.querySelector('.kit-foto'));}}
  return kit;
 }
 function addFaixaKit(f={}){const row=document.createElement('div');row.className='kit-faixa';row.style.cssText='display:flex;gap:10px;flex-wrap:wrap;margin:12px 0';row.innerHTML='<label>A partir de quantas unidades?<input class="kit-minimo" type="number" min="2" step="1"></label><label>Desconto (%)<input class="kit-percentual" type="number" min="0.01" max="99.99" step=".01"></label><button type="button" class="btn btn-ghost">Remover faixa</button>';row.querySelector('.kit-minimo').value=f.minimo??'';row.querySelector('.kit-percentual').value=f.percentual??'';row.querySelector('button').onclick=()=>row.remove();document.getElementById('kitFaixas').append(row);}
@@ -475,6 +475,128 @@ function coletarKit(){
 }
 function exemploNatal(){if(document.querySelectorAll('.kit-opcao').length&&!confirm('Substituir as opções deste formulário pelo exemplo com preços fictícios?'))return;carregarKit({opcoes:[['Rena',12],['Papai Noel',15],['Árvore de Natal',14],['Boneco de neve',12],['Biscoito',10],['Bandeja',25]].map(([nome,preco],i)=>({id:crypto.randomUUID(),nome,preco,participaDesconto:i!==5})),faixasDesconto:[{minimo:5,percentual:10}]});document.getElementById('fPublico').value='clientes';document.getElementById('fPromo').value='';document.getElementById('statusMsg').textContent='Exemplo preenchido com preços fictícios. Confira antes de salvar.';}
 
+</script>
+<style>button[hidden]{display:none!important}#editorFoto label{display:block;margin:8px 0}</style>
+<dialog id="editorFoto" aria-labelledby="tituloEditorFoto" style="width:min(600px,calc(100vw - 24px));max-height:90vh;border:1px solid #ddd;border-radius:16px;padding:20px">
+  <h2 id="tituloEditorFoto">Recortar foto</h2>
+  <p>Ajuste a proporção, a aproximação e a posição da imagem.</p>
+  <canvas id="previaRecorte" aria-label="Prévia do recorte" style="display:block;max-width:100%;max-height:42vh;object-fit:contain;margin:12px auto;background:#f3f3f3"></canvas>
+  <label>Proporção <select id="proporcaoRecorte"><option value="1">Quadrada (1:1)</option><option value="1.3333333333333333">Horizontal (4:3)</option><option value="0.75">Vertical (3:4)</option><option value="original">Original</option></select></label>
+  <label>Aproximação <input id="zoomRecorte" type="range" min="1" max="3" step="0.01" value="1"></label>
+  <label>Posição horizontal <input id="xRecorte" type="range" min="0" max="100" value="50"></label>
+  <label>Posição vertical <input id="yRecorte" type="range" min="0" max="100" value="50"></label>
+  <p id="erroRecorte" role="status"></p>
+  <button type="button" class="btn btn-primary" id="aplicarRecorte">Aplicar recorte</button>
+  <button type="button" class="btn btn-ghost" id="cancelarRecorte">Cancelar</button>
+</dialog>
+<script>
+const recortesFoto = new WeakMap();
+const botoesRecorte = new WeakMap();
+const editorFoto = document.getElementById('editorFoto');
+const canvasRecorte = document.getElementById('previaRecorte');
+const proporcaoRecorte = document.getElementById('proporcaoRecorte');
+const zoomRecorte = document.getElementById('zoomRecorte');
+const xRecorte = document.getElementById('xRecorte');
+const yRecorte = document.getElementById('yRecorte');
+const aplicarRecorte = document.getElementById('aplicarRecorte');
+const erroRecorte = document.getElementById('erroRecorte');
+let fotoEmEdicao;
+
+function fotoParaEnviar(input){
+  const original=input?.files[0];
+  const recorte=recortesFoto.get(input);
+  return original && recorte?.original===original ? recorte.arquivo : original;
+}
+
+function limparSeletorFoto(input){
+  input.value='';
+  recortesFoto.delete(input);
+  const botao=botoesRecorte.get(input);
+  if(botao)botao.hidden=true;
+}
+
+function enquadramentoFoto(largura,altura,proporcao,zoom,x,y){
+  const larguraCorte=Math.min(largura,altura*proporcao)/zoom;
+  const alturaCorte=larguraCorte/proporcao;
+  return {largura:larguraCorte,altura:alturaCorte,x:(largura-larguraCorte)*x,y:(altura-alturaCorte)*y};
+}
+
+function desenharRecorte(){
+  if(!fotoEmEdicao)return;
+  const imagem=fotoEmEdicao.imagem;
+  const proporcao=proporcaoRecorte.value==='original'?imagem.naturalWidth/imagem.naturalHeight:Number(proporcaoRecorte.value);
+  const corte=enquadramentoFoto(imagem.naturalWidth,imagem.naturalHeight,proporcao,Number(zoomRecorte.value),Number(xRecorte.value)/100,Number(yRecorte.value)/100);
+  const escala=Math.min(1,1200/Math.max(corte.largura,corte.altura));
+  canvasRecorte.width=Math.max(1,Math.round(corte.largura*escala));
+  canvasRecorte.height=Math.max(1,Math.round(corte.altura*escala));
+  canvasRecorte.getContext('2d').drawImage(imagem,corte.x,corte.y,corte.largura,corte.altura,0,0,canvasRecorte.width,canvasRecorte.height);
+}
+
+async function abrirRecorte(input,botao){
+  const original=input.files[0];
+  if(!original||editorFoto.open)return;
+  const url=URL.createObjectURL(original);
+  botao.disabled=true;
+  try{
+    const imagem=new Image();
+    imagem.src=url;
+    await imagem.decode();
+    if(input.files[0]!==original||editorFoto.open||!input.isConnected)return;
+    fotoEmEdicao={input,original,imagem};
+    const anterior=recortesFoto.get(input);
+    proporcaoRecorte.value=anterior?.proporcao||'1';
+    zoomRecorte.value=anterior?.zoom||'1';
+    xRecorte.value=anterior?.x||'50';
+    yRecorte.value=anterior?.y||'50';
+    erroRecorte.textContent='';
+    aplicarRecorte.disabled=false;
+    desenharRecorte();
+    editorFoto.showModal();
+  }catch{
+    alert('Não foi possível abrir esta imagem para recorte.');
+  }finally{
+    URL.revokeObjectURL(url);
+    botao.disabled=false;
+  }
+}
+
+document.addEventListener('change',event=>{
+  const input=event.target;
+  if(!input.matches('#fPhoto,.kit-foto'))return;
+  recortesFoto.delete(input);
+  let botao=botoesRecorte.get(input);
+  if(!botao){
+    botao=document.createElement('button');
+    botao.type='button';
+    botao.className='btn btn-ghost';
+    botao.textContent='Recortar foto';
+    botao.addEventListener('click',()=>abrirRecorte(input,botao));
+    input.after(botao);
+    botoesRecorte.set(input,botao);
+  }
+  botao.hidden=!input.files[0]?.type.startsWith('image/');
+});
+for(const controle of [proporcaoRecorte,zoomRecorte,xRecorte,yRecorte])controle.addEventListener('input',desenharRecorte);
+document.getElementById('cancelarRecorte').onclick=()=>editorFoto.close();
+editorFoto.addEventListener('close',()=>{fotoEmEdicao=undefined;});
+aplicarRecorte.onclick=()=>{
+  const edicao=fotoEmEdicao;
+  if(!edicao)return;
+  aplicarRecorte.disabled=true;
+  canvasRecorte.toBlob(blob=>{
+    if(fotoEmEdicao!==edicao||!editorFoto.open)return;
+    aplicarRecorte.disabled=false;
+    if(!blob){erroRecorte.textContent='Não foi possível aplicar o recorte. Tente novamente.';return;}
+    if(edicao.input.files[0]!==edicao.original||!edicao.input.isConnected){editorFoto.close();return;}
+    const arquivo=new File([blob],'foto-recortada.png',{type:'image/png'});
+    recortesFoto.set(edicao.input,{original:edicao.original,arquivo,proporcao:proporcaoRecorte.value,zoom:zoomRecorte.value,x:xRecorte.value,y:yRecorte.value});
+    const previa=edicao.input.closest('.kit-opcao')?.querySelector('.kit-preview');
+    if(previa){previa.src=canvasRecorte.toDataURL();previa.style.display='block';}
+    const botao=botoesRecorte.get(edicao.input);
+    if(botao)botao.textContent='Ajustar recorte';
+    editorFoto.close();
+  },'image/png');
+};
 </script>
 </body>
 </html>
