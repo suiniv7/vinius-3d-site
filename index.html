@@ -316,7 +316,20 @@ async function init(){
   const grid = document.getElementById('grid');
   grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:40px 0;">Carregando produtos...</p>';
   await Promise.all([loadCategories(), loadProducts()]);
+  const produtoSolicitado=products.find(p=>p.id===idProdutoAberto);
+  if(produtoSolicitado){
+    const publico=publicoProduto(produtoSolicitado,categories);
+    if(publico!==PUBLICO_ATUAL){
+      const destino=urlDaVitrine(publico);
+      destino.searchParams.set('produto',produtoSolicitado.id);
+      if(produtoSolicitado.cat)destino.searchParams.set('categoria',produtoSolicitado.cat);
+      location.replace(destino.href);
+      return;
+    }
+  }
   products=products.filter(p=>publicoProduto(p,categories)===PUBLICO_ATUAL);
+  const categoriaSolicitada=parametrosProduto.get('categoria');
+  if(products.some(p=>p.cat===categoriaSolicitada))activeCat=categoriaSolicitada;
   categories=categories.filter(c=>products.some(p=>p.cat===c.id));
   const nomesCategorias={filamentos:'Filamentos',impressoras:'Impressoras',acessorios:'Acessórios',chaveiros:'Chaveiros',brinquedos:'Brinquedos',personalizados:'Personalizados',miniaturas:'Miniaturas',educativos:'Educativos',utilidades:'Peças e utilidades'};
   for(const p of products)if(p.cat&&!categories.some(c=>c.id===p.cat))categories.push({id:p.cat,name:nomesCategorias[p.cat]||p.cat});
@@ -388,17 +401,27 @@ const parametrosProduto=new URLSearchParams(location.search);
 const idProdutoAberto=parametrosProduto.get('produto');
 const parametrosVitrine=new URLSearchParams(parametrosProduto);
 parametrosVitrine.delete('produto');
-const vitrineUrl='index.html'+(parametrosVitrine.size?'?'+parametrosVitrine:'');
+function urlDaVitrine(publico){
+  if(location.protocol==='file:'){
+    if(publico===PUBLICO_ATUAL)return new URL('index.html',location.href);
+    return new URL(publico==='clientes'?'catalogo/index.html':'../index.html',location.href);
+  }
+  return new URL(publico==='clientes'?'/catalogo/':'/',location.origin);
+}
+const vitrineUrl=urlDaVitrine(PUBLICO_ATUAL);
+vitrineUrl.search=parametrosVitrine.toString();
 function cartStorageKey(){return 'vinius-carrinho:'+PUBLICO_ATUAL+':'+(parametrosProduto.get('demo')||'loja');}
 function salvarCarrinho(){try{sessionStorage.setItem(cartStorageKey(),JSON.stringify(cart));}catch{}}
 function cartaoVitrine(p){
   const url=new URL(vitrineUrl,location.href);
   url.searchParams.set('produto',p.id);
+  if(p.cat)url.searchParams.set('categoria',p.cat);
   const preco=money(precoVenda(p));
   return `<article class="card"><a class="card-img" href="${esc(url.href)}" aria-label="Ver ${esc(p.name)}">${p.img?`<img src="${esc(p.img)}" alt="${esc(p.name)}" loading="lazy">`:esc(p.icon||'📦')}</a><div class="card-body"><h3><a href="${esc(url.href)}">${esc(p.name)}</a></h3><div class="card-foot"><span class="price">${preco}</span></div><a class="btn btn-secondary" href="${esc(url.href)}">Ver produto</a></div></article>`;
 }
 function prepararPaginaProduto(produto){
   document.querySelectorAll('.hero,.offer-banner,#peca,#sobre,#contato').forEach(el=>el.hidden=true);
+  if(produto?.cat)vitrineUrl.searchParams.set('categoria',produto.cat);
   document.querySelectorAll('header a[href^="#"]').forEach(link=>{link.href=vitrineUrl+link.getAttribute('href');});
   document.getElementById('tabs').hidden=true;
   const cabecalho=document.querySelector('#produtos .section-head');
