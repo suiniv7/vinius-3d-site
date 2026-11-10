@@ -419,6 +419,23 @@ function selectColor(id,colorId){
   const card=[...document.querySelectorAll('[data-product]')].find(el=>el.dataset.product===id);
   card?.querySelector('[aria-pressed="true"]')?.focus();
 }
+function verDescricao(id){
+  const produto=products.find(p=>p.id===id);
+  if(!produto)return;
+  const dialog=document.createElement('dialog');
+  dialog.setAttribute('aria-label',produto.name);
+  dialog.style.cssText='width:min(540px,calc(100vw - 32px));border:1px solid #ddd;border-radius:16px;padding:24px';
+  dialog.innerHTML='<form method="dialog"><button class="btn btn-secondary">Voltar à vitrine</button></form><h2>'+esc(produto.name)+'</h2>';
+  if(produto.desc){
+    const descricao=document.createElement('p');
+    descricao.style.whiteSpace='pre-wrap';
+    descricao.textContent=produto.desc;
+    dialog.append(descricao);
+  }
+  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+  document.body.append(dialog);
+  dialog.showModal();
+}
 function renderGrid(){
   const grid=document.getElementById('grid');
   const list=activeCat==='todos'?products:products.filter(p=>p.cat===activeCat);
@@ -431,7 +448,7 @@ function renderGrid(){
     const canAdd=!unconfigured&&(!needsColor||color&&color.stock>0);
     return `<div class="card" data-product="${esc(p.id)}">
       <div class="card-img">${p.img?`<img src="${esc(p.img)}" alt="${esc(p.name)}" loading="lazy">`:esc(p.icon||'📦')}</div>
-      <div class="card-body"><h3>${esc(p.name)}</h3><p class="desc">${esc(p.desc)}</p>
+      <div class="card-body"><h3>${esc(p.name)}</h3><button type="button" class="btn btn-secondary" onclick="verDescricao(${arg(p.id)})">Ver produto</button>
       <div class="card-foot"><div>${temPromocao(p)?`<span style="display:block;font-size:12px;font-weight:700;color:#9c321a">Em promoção</span><del style="color:#6b6f6c;font-size:13px">${money(p.price)}</del> `:''}<span class="price">${money(precoVenda(p))}</span></div></div>
       ${needsColor?`<fieldset class="color-field"><legend>Escolha a cor</legend><div class="color-options">${colors.map(c=>`<button type="button" class="color-option ${c.stock===0?'sold-out':''}" aria-pressed="${color?.id===c.id}" onclick="selectColor(${arg(p.id)},${arg(c.id)})"><span class="swatch" style="background:${c.hex}" aria-hidden="true"></span><span>${esc(c.name)}<small>${c.stock>0?'Disponível':'Fora de estoque'}</small></span></button>`).join('')}</div></fieldset>
       <p class="stock-note ${unavailable?'unavailable':''}" role="status">${color?`${esc(color.name)} · ${unavailable?'Fora de estoque':color.stock+' disponível(is)'}`:'Selecione uma cor para continuar.'}</p>`:''}
@@ -550,7 +567,7 @@ function detalhesKit(p){const valores=kitSelecao[p.id]||(kitSelecao[p.id]={});co
 
 function cardKit(p){
  const minimo=Math.min(...Kits.opcoes(p).map(o=>Number(o.preco)));
- return '<article class="card" data-product="'+esc(p.id)+'"><button type="button" data-kit-ver="'+esc(p.id)+'" aria-label="Ver '+esc(p.name)+'" class="card-img" style="width:100%;padding:0;border:0;cursor:pointer">'+(p.img?'<img src="'+esc(p.img)+'" alt="'+esc(p.name)+'" loading="lazy">':esc(p.icon||'🎁'))+'</button><div class="card-body"><h3><button type="button" data-kit-ver="'+esc(p.id)+'" style="padding:0;border:0;background:none;font:inherit;text-align:left;cursor:pointer">'+esc(p.name)+'</button></h3><p class="desc">'+esc(p.desc)+'</p><div class="card-foot"><span class="price">A partir de '+money(minimo)+'</span></div><button type="button" class="add-btn" data-kit-ver="'+esc(p.id)+'">Ver produto</button></div></article>';
+ return '<article class="card" data-product="'+esc(p.id)+'"><button type="button" data-kit-ver="'+esc(p.id)+'" aria-label="Ver '+esc(p.name)+'" class="card-img" style="width:100%;padding:0;border:0;cursor:pointer">'+(p.img?'<img src="'+esc(p.img)+'" alt="'+esc(p.name)+'" loading="lazy">':esc(p.icon||'🎁'))+'</button><div class="card-body"><h3><button type="button" data-kit-ver="'+esc(p.id)+'" style="padding:0;border:0;background:none;font:inherit;text-align:left;cursor:pointer">'+esc(p.name)+'</button></h3><div class="card-foot"><span class="price">A partir de '+money(minimo)+'</span></div><button type="button" class="add-btn" data-kit-ver="'+esc(p.id)+'">Ver produto</button></div></article>';
 }
 
 const kitFotoSelecionada=Object.create(null);
