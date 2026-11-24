@@ -401,6 +401,7 @@ const parametrosProduto=new URLSearchParams(location.search);
 const idProdutoAberto=parametrosProduto.get('produto');
 const parametrosVitrine=new URLSearchParams(parametrosProduto);
 parametrosVitrine.delete('produto');
+parametrosVitrine.delete('categoria');
 function urlDaVitrine(publico){
   if(location.protocol==='file:'){
     if(publico===PUBLICO_ATUAL)return new URL('index.html',location.href);
@@ -421,7 +422,6 @@ function cartaoVitrine(p){
 }
 function prepararPaginaProduto(produto){
   document.querySelectorAll('.hero,.offer-banner,#peca,#sobre,#contato').forEach(el=>el.hidden=true);
-  if(produto?.cat)vitrineUrl.searchParams.set('categoria',produto.cat);
   document.querySelectorAll('header a[href^="#"]').forEach(link=>{link.href=vitrineUrl+link.getAttribute('href');});
   document.getElementById('tabs').hidden=true;
   const cabecalho=document.querySelector('#produtos .section-head');
