@@ -166,6 +166,26 @@
 
 
 [hidden]{display:none!important}.pagina-produto{grid-template-columns:minmax(0,760px);justify-content:center}.pagina-produto .card-img img{object-fit:contain}.card-body h3 a{color:inherit}
+
+  /* Abertura compacta para aproximar os produtos no celular. */
+  .hero{padding:36px 20px 28px;}
+  .hero h1{font-size:clamp(26px,4vw,38px);line-height:1.15;margin-bottom:10px;}
+  .hero p.lead{margin-bottom:16px;}
+  #produtos{padding-top:28px;}
+  @media(max-width:760px){
+    .hero{padding:20px 16px 14px;}
+    .hero .badge-note{margin-bottom:8px;}
+    .hero h1{font-size:26px;max-width:340px;}
+    .hero p.lead{font-size:14px;line-height:1.4;margin-bottom:12px;}
+    .hero-actions{gap:8px;}
+    .hero-actions .btn{padding:9px 12px;font-size:13px;}
+    #produtos{padding:16px 16px 28px;}
+    #produtos .section-head{margin-bottom:14px;}
+    #produtos .section-head h2{font-size:23px;}
+    #produtos .section-head p{display:none;}
+    #produtos .tabs{margin-bottom:16px;}
+  }
+
 </style>
 <script>
 /* Preços calculados em centavos; faixas não se acumulam. */
@@ -214,8 +234,8 @@ const Kits = (()=>{
 
 <section class="hero">
   <span class="badge-note">Peças prontas e sob encomenda</span>
-  <h1>Suas ideias, impressas em 3D com qualidade e capricho</h1>
-  <p class="lead">Chaveiros, brinquedos, miniaturas e peças personalizadas — do catálogo pronto ou sob medida, do seu jeito.</p>
+  <h1>Peças em 3D para você</h1>
+  <p class="lead">Escolha suas peças ou peça sob encomenda.</p>
   <div class="hero-actions">
     <a class="btn btn-primary" href="#produtos">Ver produtos</a>
     <a class="btn btn-secondary" href="#peca">Pedir orçamento</a>
