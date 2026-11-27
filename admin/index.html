@@ -132,7 +132,7 @@ const Kits = (()=>{
         </div>
         <div class="field">
           <label for="fPublico">Mostrar para</label>
-          <select id="fPublico"><option value="">Automático pela categoria e nome</option><option value="makers">Makers — site principal</option><option value="clientes">Clientes — catálogo de peças</option></select>
+          <select id="fPublico"><option value="">Automático pela categoria e nome</option><option value="makers">Site principal</option><option value="clientes">Catálogo</option></select>
           <label>Categoria</label>
           <select id="fCat">
             <option value="impressoras">🖨️ Impressoras</option>
@@ -267,7 +267,7 @@ function startListening(){
         </div>
       </div>`;
     };
-    list.innerHTML = [['makers','Makers — filamentos, impressoras e acessórios'],['clientes','Catálogo de peças — clientes']].map(([publico,titulo])=>{
+    list.innerHTML = [['makers','Site principal'],['clientes','Catálogo']].map(([publico,titulo])=>{
       const docs=snap.docs.filter(d=>publicoProduto(d.data())===publico);
       return '<section style="margin:24px 0"><h3>'+titulo+' ('+docs.length+')</h3>'+ (docs.length?docs.map(renderRow).join(''):'<p class="empty-note">Nenhum produto nesta área.</p>')+'</section>';
     }).join('');
@@ -343,7 +343,7 @@ async function saveProduct(){
   try{
     cores = collectColors();
     if(kit.opcoes.length&&cores.length)throw Error('Anúncios com opções não podem ter seleção de cores. Remova as cores para continuar.');
-    if((cat==='filamentos'||/filamento/i.test(name))&&!cores.length) throw new Error('Cadastre pelo menos uma cor para este filamento.');
+    if(!kit.opcoes.length&&(cat==='filamentos'||/filamento/i.test(name))&&!cores.length) throw new Error('Cadastre pelo menos uma cor para este filamento.');
   }catch(e){status.className='err';status.textContent=e.message;return;}
   saveBtn.disabled = true;
   status.className = '';
@@ -441,7 +441,7 @@ function resetForm(){
 <script>
 // Opções e regras por anúncio, preenchidas pelo administrador.
 const painelKit=document.createElement('section');painelKit.style.cssText='margin:20px 0;padding:18px;border:1px solid #ddd;border-radius:12px';
-painelKit.innerHTML=`<h3>Opções do anúncio e desconto por quantidade</h3><label><input type="checkbox" id="kitAtivo" style="width:auto" onchange="document.getElementById('kitCampos').hidden=!this.checked"> Permitir escolher várias opções neste anúncio</label><div id="kitCampos" hidden><p>Para o catálogo de peças. Cada opção tem seu preço. Marque quais opções contam para o desconto e também o recebem. As quantidades podem ser misturadas no mesmo anúncio.</p><div id="kitOpcoes"></div><button type="button" class="btn btn-ghost" onclick="addOpcaoKit()">+ Adicionar opção</button><button type="button" class="btn btn-ghost" onclick="exemploNatal()">Preencher exemplo natalino</button><h4>Faixas de desconto</h4><p>O site aplica uma única faixa: a de maior quantidade atingida. A bandeja pode ficar fora de todas as faixas.</p><div id="kitFaixas"></div><button type="button" class="btn btn-ghost" onclick="addFaixaKit()">+ Adicionar faixa</button><p>O preço normal do anúncio vira apenas referência interna. Na vitrine, aparecem os preços de cada opção. Promoção geral e seleção de cores não se combinam com opções.</p></div>`;
+painelKit.innerHTML=`<h3>Opções do anúncio e desconto por quantidade</h3><label><input type="checkbox" id="kitAtivo" style="width:auto" onchange="document.getElementById('kitCampos').hidden=!this.checked"> Permitir escolher várias opções neste anúncio</label><div id="kitCampos" hidden><p>Disponível no Site principal e no Catálogo. Cada opção tem seu preço. Marque quais opções contam para o desconto e também o recebem. As quantidades podem ser misturadas no mesmo anúncio.</p><div id="kitOpcoes"></div><button type="button" class="btn btn-ghost" onclick="addOpcaoKit()">+ Adicionar opção</button><button type="button" class="btn btn-ghost" onclick="exemploNatal()">Preencher exemplo natalino</button><h4>Faixas de desconto</h4><p>O site aplica uma única faixa: a de maior quantidade atingida. A bandeja pode ficar fora de todas as faixas.</p><div id="kitFaixas"></div><button type="button" class="btn btn-ghost" onclick="addFaixaKit()">+ Adicionar faixa</button><p>O preço normal do anúncio vira apenas referência interna. Na vitrine, aparecem os preços de cada opção. Promoção geral e seleção de cores não se combinam com opções.</p></div>`;
 document.getElementById('saveBtn').parentElement.before(painelKit);
 function addOpcaoKit(o={}){
  const row=document.createElement('div');row.className='kit-opcao';row.dataset.id=o.id||crypto.randomUUID();row.dataset.img=o.img||'';row.style.cssText='display:flex;gap:12px;flex-wrap:wrap;margin:16px 0;padding:14px;border:1px solid #ddd;border-radius:10px';
@@ -462,8 +462,7 @@ function addFaixaKit(f={}){const row=document.createElement('div');row.className
 function carregarKit(p={}){document.getElementById('kitOpcoes').replaceChildren();document.getElementById('kitFaixas').replaceChildren();document.getElementById('kitAtivo').checked=Kits.ativo(p);document.getElementById('kitCampos').hidden=!Kits.ativo(p);Kits.opcoes(p).forEach(addOpcaoKit);(p.faixasDesconto||[]).forEach(addFaixaKit);}
 function coletarKit(){
  if(!document.getElementById('kitAtivo').checked)return{opcoes:[],faixasDesconto:[]};
- const publico=document.getElementById('fPublico').value||publicoProduto({name:document.getElementById('fName').value,cat:document.getElementById('fCat').value});
- if(publico!=='clientes')throw Error('Anúncios com opções devem ser destinados a Clientes — catálogo de peças.');
+
  if(document.getElementById('fPromo').value.trim())throw Error('Para usar opções, limpe o preço promocional geral. Use as faixas de desconto.');
  const opcoes=[...document.querySelectorAll('.kit-opcao')].map(row=>({id:row.dataset.id,img:row.dataset.img||'',nome:row.querySelector('.kit-nome').value.trim(),preco:Number(row.querySelector('.kit-preco').value),participaDesconto:row.querySelector('.kit-participa').checked}));
  if(!opcoes.length||opcoes.some(o=>!o.nome||!Number.isFinite(o.preco)||o.preco<=0))throw Error('Preencha nome e preço positivo em todas as opções.');
